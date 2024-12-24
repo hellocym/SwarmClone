@@ -7,10 +7,9 @@ class PreTrainDataset(Dataset):
     def __init__(self, data_path: str, max_lenth: int):
         self.data_path = data_path
         self.max_lenth = max_lenth
-        data = np.fromfile(self.data_path, dtype=np.uint16)
+        data = np.memmap(self.data_path, dtype=np.uint16, mode="r")
         self.n_lines = data.shape[0] // (max_lenth + 1)
-        data = data[:self.n_lines * (max_lenth + 1)]
-        self.data = data.reshape((self.n_lines, max_lenth + 1))
+        self.data = data[:self.n_lines * (max_lenth + 1)].reshape((self.n_lines, max_lenth + 1))
 
     def __len__(self):
         return self.n_lines

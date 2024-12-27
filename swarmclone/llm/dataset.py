@@ -2,7 +2,8 @@ from typing import Optional
 from torch.utils.data import Dataset
 import torch
 import numpy as np
-from . import config
+import json
+import os
 
 class PreTrainDataset(Dataset):
     def __init__(self, data_path: str, max_lenth: int, unused_indexes: Optional[list[int]] = None):
@@ -18,22 +19,19 @@ class PreTrainDataset(Dataset):
             self.unused_indexes = unused_indexes
         self.used_indexes: list[int] = [] # 已使用的行索引
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.unused_indexes) # 返回未使用的行数
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> tuple[torch.Tensor, torch.Tensor]:
         abs_index = self.unused_indexes[index] # 从索引表中取出绝对索引
         line = self.data[abs_index]
         self.used_indexes.append(abs_index) # 记录已使用的行索引
-        x = torch.from_numpy(line[:-1])
-        y = torch.from_numpy(line[1:])
+        x = torch.from_numpy(line[:-1].copy()) # 复制以防止torch报警告
+        y = torch.from_numpy(line[1:].copy())
         return x, y
 
-    def get_unused_indexes(self):
-        unused_indexes = self.unused_indexes[:]
-        for used in self.used_indexes:
-            unused_indexes.remove(used)
-        return unused_indexes
+    def get_unused_indexes(self) -> list[int]:
+        return list(set(self.unused_indexes) - set(self.used_indexes))
 
 def collate_fn(batch):
     x_list, y_list = zip(*batch)
@@ -41,18 +39,41 @@ def collate_fn(batch):
     y = torch.stack(y_list, dim=0)
     return x, y
 
+def from_file(config_path: str, max_lenth: int) -> tuple[PreTrainDataset, PreTrainDataset]:
+    # 根据配置文件读取数据集数据
+    # 配置文件实例：
+    # {
+    #     "?path": "数据集本体相对路径",
+    #     "path": "dataset.bin",
+    #     "?train": "训练集索引文件相对路径",
+    #     "train": "train.lst",
+    #     "?valid": "验证集索引文件相对路径",
+    #     "valid": "valid.lst"
+    # }
+    config = json.load(open(config_path))
+    dir_path = os.path.dirname(config_path)
+    path = os.path.join(dir_path, config["path"])
+    train_path = os.path.join(dir_path, config["train"])
+    valid_path = os.path.join(dir_path, config["valid"])
+    train_indexes = list(map(int, open(train_path).read().split()))
+    valid_indexes = list(map(int, open(valid_path).read().split()))
+    train_dataset = PreTrainDataset(path, max_lenth, unused_indexes=train_indexes)
+    valid_dataset = PreTrainDataset(path, max_lenth, unused_indexes=valid_indexes)
+    return train_dataset, valid_dataset
+
 if __name__ == '__main__':
     import sys
     from torch.utils.data import DataLoader
     from tokenizers import Tokenizer # type: ignore
+    from . import config
     if len(sys.argv) < 3:
         print("Usage: python -m swarmclone.llm.dataset <tokenizer_path> <data_path>")
         exit(1)
     tokenizer_path = sys.argv[1]
     data_path = sys.argv[2]
     tokenizer = Tokenizer.from_file(tokenizer_path)
-    dataset = PreTrainDataset(data_path, config.MAX_LENGTH,
-                            unused_indexes=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) # 只取前10行作为测试
+    print(f"Loading dataset from {data_path}...")
+    _, dataset = from_file(data_path, config.MAX_LENGTH)
     dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     for x, y in dataloader:
         print(x)
@@ -65,4 +86,4 @@ if __name__ == '__main__':
             input()
         except EOFError:
             break
-    print(dataset.get_unused_indexes())
+        

@@ -26,8 +26,8 @@ class PreTrainDataset(Dataset):
         abs_index = self.unused_indexes[index] # 从索引表中取出绝对索引
         line = self.data[abs_index]
         self.used_indexes.append(abs_index) # 记录已使用的行索引
-        x = torch.from_numpy(line[:-1].copy()) # 复制以防止torch报警告
-        y = torch.from_numpy(line[1:].copy())
+        x = torch.from_numpy(line[:-1].copy()).type(torch.long) # 复制以防止torch报警告
+        y = torch.from_numpy(line[1:].copy()).type(torch.long) # 同时转换类型以防止模型报错
         return x, y
 
     def get_unused_indexes(self) -> list[int]:
@@ -65,7 +65,6 @@ if __name__ == '__main__':
     import sys
     from torch.utils.data import DataLoader
     from tokenizers import Tokenizer # type: ignore
-    from . import config
     if len(sys.argv) < 3:
         print("Usage: python -m swarmclone.llm.dataset <tokenizer_path> <data_path>")
         exit(1)
@@ -73,13 +72,13 @@ if __name__ == '__main__':
     data_path = sys.argv[2]
     tokenizer = Tokenizer.from_file(tokenizer_path)
     print(f"Loading dataset from {data_path}...")
-    _, dataset = from_file(data_path, config.MAX_LENGTH)
-    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
+    _, dataset = from_file(data_path, 1024)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
     for x, y in dataloader:
         print(x)
         print(y)
         print(x.shape, y.shape)
-        for i in range(config.BATCH_SIZE):
+        for i in range(2):
             print(tokenizer.decode(x[i].tolist())[:50])
             print(tokenizer.decode(y[i].tolist())[:50])
         try:

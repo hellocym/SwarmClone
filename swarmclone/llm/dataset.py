@@ -20,6 +20,12 @@ class PreTrainDataset(Dataset):
         y = torch.from_numpy(line[1:])
         return x, y
 
+def collate_fn(batch):
+    x_list, y_list = zip(*batch)
+    x = torch.stack(x_list, dim=0)
+    y = torch.stack(y_list, dim=0)
+    return x, y
+
 if __name__ == '__main__':
     import sys
     from torch.utils.data import DataLoader
@@ -31,12 +37,13 @@ if __name__ == '__main__':
     data_path = sys.argv[2]
     tokenizer = Tokenizer.from_file(tokenizer_path)
     dataset = PreTrainDataset(data_path, config.MAX_LENGTH)
-    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=config.BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     for x, y in dataloader:
         print(x)
         print(y)
-        print(tokenizer.decode(x[0].tolist()))
-        print(tokenizer.decode(y[0].tolist()))
+        for i in range(config.BATCH_SIZE):
+            print(tokenizer.decode(x[i].tolist())[:50])
+            print(tokenizer.decode(y[i].tolist())[:50])
         try:
             input()
         except EOFError:

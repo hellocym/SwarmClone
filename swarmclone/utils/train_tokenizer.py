@@ -11,7 +11,7 @@ def train_tokenizer(f: StringIO, extra_tokens: list[str] = []) -> Tokenizer:
     tokenizer.pre_tokenizer = Split(r"\s", "merged_with_previous") # 保留空白字符同时防止汉字后面多出空格
     trainer = BpeTrainer(
         special_tokens=list(config.SPECIAL_TOKENS.keys()),
-        vocab_size=config.VOCAB_SIZE - len(extra_tokens)
+        vocab_size=32768 - len(extra_tokens)
     )
     tokenizer.train_from_iterator(f, trainer=trainer)
     tokenizer.add_tokens(extra_tokens)

@@ -62,8 +62,8 @@ if __name__ == '__main__':
                 try:
                     output = model(input_ids)
                     logits = F.softmax(output[0][-1], dim=-1)
-                    # 采样输出，取概率最高的100个进行加权随机采样
-                    probs, indices = logits.topk(100)
+                    # 采样输出，取概率最高的30个进行加权随机采样
+                    probs, indices = logits.topk(30)
                     token = indices[torch.multinomial(probs, 1)]
                     if token.item() == config.SPECIAL_TOKENS["<eos>"]: # 遇到结束符则停止
                         print()

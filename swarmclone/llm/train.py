@@ -137,7 +137,8 @@ if __name__ == '__main__':
         dataset_path = os.path.dirname(os.path.join(config_dir, train_config['dataset_path']))
         lst_name = os.path.join(dataset_path, f'train{step}.lst')
         with open(lst_name, 'w') as f:
-            f.write('\n'.join(map(str, unused_indexes)))
+            for i in tqdm(unused_indexes):
+                f.write(f'{i}\n')
         print(f"==> Unused indexes saved to {lst_name}")
         print("!! REMEMBER TO UPDATE THE DATASET FILE AND CONFIG FILE TO USE THE UPDATED LIST AND CHECKPOINT !!")
 

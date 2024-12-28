@@ -54,7 +54,7 @@ if __name__ == '__main__':
         except EOFError:
             break
         # 编码输入文本
-        input_ids = tokenizer.encode(text).ids[:train_config['max_length']]
+        input_ids = tokenizer.encode(text).ids[-train_config['max_length']:]
         input_ids = torch.LongTensor(input_ids).unsqueeze(0).to(config.DEVICE)
         # 推理
         with torch.no_grad():

@@ -60,7 +60,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             while True:
                 try:
-                    output = model(input_ids[:train_config["max_length"]])
+                    output = model(input_ids)
                     logits = F.softmax(output[0][-1], dim=-1)
                     # 采样输出，取概率最高的10个进行加权随机采样
                     probs, indices = logits.topk(10)
@@ -68,7 +68,7 @@ if __name__ == '__main__':
                     if token.item() == config.SPECIAL_TOKENS["<eos>"]: # 遇到结束符则停止
                         print()
                         break
-                    input_ids = torch.cat([input_ids, token.unsqueeze(0)], dim=1) # 自回归生成
+                    input_ids = torch.cat([input_ids, token.unsqueeze(0)], dim=1)[-train_config['max_length']:] # 自回归生成
                     print(tokenizer.id_to_token(token.item()), end="", flush=True)
                 except KeyboardInterrupt:
                     print()

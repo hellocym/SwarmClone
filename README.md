@@ -1,6 +1,8 @@
 # SwarmClone 从零开始·蜂群克隆计划
 这是一个致力于从零开始复刻一个Neuro-sama的开源项目！
 
+*这个仓库主要仅包含语言模型部分，其他部分见组织：[SwarmClone](https://github.com/SwarmClone)*
+
 什么是“从零开始”？
  - 不使用第三方构建好的大语言模型
  - 不使用第三方API（如ChatGPT）

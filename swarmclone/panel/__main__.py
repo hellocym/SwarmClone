@@ -1,13 +1,17 @@
-from robyn import Robyn
-from . import config
+from fastapi import FastAPI, Request
+from swarmclone.utils import config
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-app = Robyn(__file__)
+app = FastAPI()
+app.mount("/static", StaticFiles(directory="frontend/"), name="static")
 
+templates = Jinja2Templates(directory="frontend/static")
 
 @app.get("/")
-async def h(request):
-    return "Hello, world!"
-
+def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 if __name__ == "__main__":
-    app.start(host=config.HOST, port=config.PORT)
+    import uvicorn
+    uvicorn.run(app, host=config.HOST, port=config.PORT)

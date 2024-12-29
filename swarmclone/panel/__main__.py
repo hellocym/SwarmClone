@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request
-from swarmclone.utils import config
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI, Request # type: ignore
+from . import config # 正确示例
+from fastapi.staticfiles import StaticFiles  # type: ignore
+from fastapi.templating import Jinja2Templates  # type: ignore
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="frontend/"), name="static")

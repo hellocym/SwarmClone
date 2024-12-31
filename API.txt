@@ -1,0 +1,132 @@
+PANEL_TO_LLM: 8000
+PANEL_TO_TTS: 8001
+PANEL_TO_UNITY: 8002
+PANEL_FROM_LLM: 8003
+PANEL_FROM_ASR: 8004
+PANEL_FROM_CHAT: 8005
+
+LLM：
+从llm:LLM_FROM_PANEL【主动连接】panel:PANEL_TO_LLM端口：
+【接受】来自语音识别模块的文本
+示例：
+{
+    "from": "ASR",
+    "name": "Developer A",
+    "text": "这是来自开发者A的语音识别结果"
+}
+【接受】来自直播聊天区的文本
+示例：
+{
+    "from": "Chat",
+    "list": [
+        {
+            "name": "Audience A",
+            "text": "这是来自观众A的直播聊天内容"
+        },
+        {
+            "name": "Audience B",
+            "text": "这是来自观众B的直播聊天内容"
+        }
+    ]
+}
+从llm:LLM_TO_PANEL【主动连接】panel:PANEL_FROM_LLM端口：
+【发出】生成文本token和情感对应概率
+示例：
+{
+    "from": "LLM",
+    "token": "A", # 只发送最新生成的token
+    "feelings": {
+        "positive": 0.8, # 具体的情感分类待定
+        "negative": 0.2
+    }
+}
+
+ASR：
+从asr:ASR_TO_PANEL【主动连接】panel:PANEL_FROM_ASR端口：
+【发出】识别的文本信息
+示例：
+{
+    "from": "ASR",
+    "name": "Developer A",
+    "text": "这是来自开发者A的语音识别结果"
+}
+
+TTS：
+从tts:TTS_FROM_PANEL【主动连接】panel:PANEL_TO_TTS端口：
+【接受】模型生成的文本
+示例：
+{
+    "from": "LLM",
+    "token": "A",
+    "feelings": {
+        "positive": 0.8,
+        "negative": 0.2
+    }
+}
+此处会要求TTS支持流式合成，也可以选择缓存token直至收到<eos>
+
+前端【Unity】：
+从unity:UNITY_FROM_PANEL【主动连接】panel:PANEL_TO_UNITY端口：
+【接受】来自模型的文本
+示例：
+{
+    "from": "LLM",
+    "tokens": "A",
+    "feelings": {
+        "positive": 0.8,
+        "negative": 0.2
+    }
+}
+【接受】来自语音识别模块的文本
+示例：
+{
+    "from": "ASR",
+    "name": "Developer A",
+    "text": "这是来自开发者A的语音识别结果"
+}
+【接受】来自直播聊天区的文本
+示例：
+{
+    "from": "Chat",
+    "list": [
+        {
+            "name": "Audience A",
+            "text": "这是来自观众A的直播聊天内容"
+        },
+        {
+            "name": "Audience B",
+            "text": "这是来自观众B的直播聊天内容"
+        }
+    ]
+}
+
+直播间模块：
+从chat:CHAT_TO_PANEL【主动连接】panel:PANEL_FROM_CHAT端口：
+【发出】直播间聊天内容
+示例：
+{
+    "from": "Chat",
+    "list": [
+        {
+            "name": "Audience A",
+            "text": "这是来自观众A的直播聊天内容"
+        },
+        {
+            "name": "Audience B",
+            "text": "这是来自观众B的直播聊天内容"
+        }
+    ]
+}
+
+Panel（核心）模块：
+【监听】panel:PANEL_FROM_ASR端口：【接受】来自语音识别模块的文本
+==>【转发】到llm:LLM_FROM_PANEL端口
+==>【转发】到unity:UNITY_FROM_PANEL端口
+【监听】panel:PANEL_FROM_CHAT端口：【接受】来自直播聊天区的文本
+==>【转发】到llm:LLM_FROM_PANEL端口
+==>【转发】到unity:UNITY_FROM_PANEL端口
+【监听】panel:LLM_TOKEN_OUT端口：【接受】来自模型的文本
+==>【转发】到unity:UNITY_FROM_PANEL端口
+==>【转发】到tts:TTS_FROM_PANEL端口
+
+如果数据的"from"字段为"stop"应该断开连接。

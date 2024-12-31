@@ -46,7 +46,7 @@ if __name__ == '__main__':
             sock_input.close()
             break
         messages.append(message)
-        streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True)
+        streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True, max_new_tokens=1000)
         kwargs = {"text_inputs": messages, "streamer": streamer}
         generation_thread = threading.Thread(target=pipe, kwargs=kwargs)
         generation_thread.start()

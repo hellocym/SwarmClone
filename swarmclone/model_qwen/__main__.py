@@ -1,23 +1,63 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer # type: ignore
+from transformers import pipeline, TextIteratorStreamer # type: ignore
+import socket
+import threading
+import json
+import queue
 from . import config
 
-model_name = "Qwen/Qwen2.5-7B-Instruct"
+q: queue.Queue[dict[str, str]] = queue.Queue()
 
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    torch_dtype="auto",
-    device_map="auto"
-)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+def recv_msg(sock: socket.socket, q: queue.Queue[dict[str, str]]):
+    while True:
+        try:
+            data = json.loads(sock.recv(1024).decode())
+        except json.JSONDecodeError:
+            pass
+        else:
+            if data["from"] == "stop":
+                q.put({"role": "stop", "content": ""})
+                break
+            if data["from"] == "ASR":
+                q.put({"role": "user", "content": data["text"]})
+            else:
+                for message in data["list"]:
+                    q.put({"role": "user", "content": message["text"]})
 
-prompt = "Give me a short introduction to large language model."
-messages = [
-    {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
-    {"role": "user", "content": prompt},
-]
-text = tokenizer.apply_chat_template(
-    messages,
-    tokenize=False,
-    add_generation_prompt=True,
-)
-model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+if __name__ == '__main__':
+    pipe = pipeline(
+        'text-generation',
+        model='Qwen/Qwen2.5-0.5B-Instruct',
+        torch_dtype="auto",
+        device_map="auto"
+    )
+    streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True)
+    sock_input = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_input.connect((config.PANEL_HOST, config.PANEL_TO_LLM))
+    sock_output = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_output.connect((config.PANEL_HOST, config.PANEL_FROM_LLM))
+    t_recv = threading.Thread(target=recv_msg, args=(sock_input, q))
+    t_recv.start()
+    messages: list[dict[str, str]] = []
+    while True:
+        message = q.get(True)
+        if message["role"] == "stop":
+            sock_output.sendall(json.dumps({"from": "stop"}).encode())
+            sock_output.close()
+            sock_input.close()
+            break
+        messages.append(message)
+        streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True)
+        kwargs = {"text_inputs": messages, "streamer": streamer}
+        generation_thread = threading.Thread(target=pipe, kwargs=kwargs)
+        generation_thread.start()
+        generated_text = ""
+        for text in streamer:
+            data = {
+                "from": "LLM",
+                "token": text,
+                "feelings": {}
+            }
+            sock_output.sendall(json.dumps(data).encode())
+            generated_text += text
+        messages.append({"role": "assistant", "content": generated_text})
+    

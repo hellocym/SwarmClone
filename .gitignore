@@ -176,3 +176,6 @@ datasets/
 # Checkpoints
 *.pt
 .idea/
+
+# Qwen dummy model
+Qwen/

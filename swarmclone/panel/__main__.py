@@ -6,11 +6,8 @@ from fastapi.templating import Jinja2Templates  # type: ignore
 
 app = FastAPI()
 
-# 获取当前项目的根目录
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 # 设置静态文件目录和模板目录
-static_dir = os.path.join(base_dir, "frontend/static")
+static_dir = "frontend/static"
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=static_dir)
@@ -21,4 +18,4 @@ def root(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=config.HOST, port=config.PORT)
+    uvicorn.run(app, host=config.PANEL_HOST, port=config.PANEL_WEB_PORT)

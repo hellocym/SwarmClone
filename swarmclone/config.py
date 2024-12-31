@@ -24,6 +24,7 @@ class Config:
     UNITY_FROM_PANEL: int = 5000
 
     PANEL_HOST: str = "localhost"
+    PANEL_WEB_PORT: int = 8080
     PANEL_TO_LLM: int = 6000
     PANEL_TO_TTS: int = 6001
     PANEL_TO_UNITY: int = 6002

@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
-import sounddevice as sd
+import sounddevice as sd # type: ignore
 import os
-import sherpa_onnx
+import sherpa_onnx # type: ignore
 
 def assert_file_exists(filename: str):
     assert Path(filename).is_file(), (

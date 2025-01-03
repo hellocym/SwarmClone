@@ -2,7 +2,7 @@ import socket
 from . import config, asr_config
 import json
 from .sherpa import asr_init, create_recognizer
-import sounddevice as sd
+import sounddevice as sd # type: ignore
 
 if __name__ == '__main__':
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                         segment_id += 1
                     recognizer.reset(stream)
             except KeyboardInterrupt:
-                sock.sendall(b"{'from': 'stop'}")
+                sock.sendall(b'{"from": "stop"}')
                 sock.close()
                 break
             

@@ -9,7 +9,7 @@ if __name__ == '__main__':
             try:
                 message = input("Enter message: ")
             except EOFError:
-                sock.sendall(b"{'from': 'stop'}")
+                sock.sendall(b'{"from": "stop"}')
                 sock.close()
                 break
             data = {

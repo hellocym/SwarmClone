@@ -28,36 +28,36 @@ if __name__ == '__main__':
         'text-generation',
         model='Qwen/Qwen2.5-0.5B-Instruct',
         torch_dtype="auto",
-        device_map="auto"
+        device_map="auto",
+        max_new_tokens=1000,
     )
     streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True)
-    sock_input = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock_input.connect((config.PANEL_HOST, config.PANEL_TO_LLM))
-    sock_output = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock_output.connect((config.PANEL_HOST, config.PANEL_FROM_LLM))
-    t_recv = threading.Thread(target=recv_msg, args=(sock_input, q))
-    t_recv.start()
-    messages: list[dict[str, str]] = []
-    while True:
-        message = q.get(True)
-        if message["role"] == "stop":
-            sock_output.sendall(json.dumps({"from": "stop"}).encode())
-            sock_output.close()
-            sock_input.close()
-            break
-        messages.append(message)
-        streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True, max_new_tokens=1000)
-        kwargs = {"text_inputs": messages, "streamer": streamer}
-        generation_thread = threading.Thread(target=pipe, kwargs=kwargs)
-        generation_thread.start()
-        generated_text = ""
-        for text in streamer:
-            data = {
-                "from": "LLM",
-                "token": text,
-                "feelings": {}
-            }
-            sock_output.sendall(json.dumps(data).encode())
-            generated_text += text
-        messages.append({"role": "assistant", "content": generated_text})
-    
+    with (  socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_input,
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_output):
+        sock_input.connect((config.PANEL_HOST, config.PANEL_TO_LLM))
+        sock_output.connect((config.PANEL_HOST, config.PANEL_FROM_LLM))
+        t_recv = threading.Thread(target=recv_msg, args=(sock_input, q))
+        t_recv.start()
+        messages: list[dict[str, str]] = []
+        while True:
+            message = q.get(True)
+            if message["role"] == "stop":
+                sock_output.sendall(json.dumps({"from": "stop"}).encode())
+                sock_output.close()
+                sock_input.close()
+                break
+            messages.append(message)
+            kwargs = {"text_inputs": messages, "streamer": streamer}
+            generation_thread = threading.Thread(target=pipe, kwargs=kwargs)
+            generation_thread.start()
+            generated_text = ""
+            for text in streamer:
+                data = {
+                    "from": "LLM",
+                    "token": text,
+                    "feelings": {}
+                }
+                sock_output.sendall(json.dumps(data).encode())
+                generated_text += text
+            messages.append({"role": "assistant", "content": generated_text})
+        

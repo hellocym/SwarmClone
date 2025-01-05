@@ -3,7 +3,7 @@ from dataclasses import dataclass
 @dataclass
 class ASRConfig:
     # 语音识别模型选择(paraformer)
-    MODEL: str = "paraformer"
+    MODEL: str = "zipformer"
     # 语音模型路径
     MODELPATH="~/.swarmclone/asr/"
     # token.txt路径

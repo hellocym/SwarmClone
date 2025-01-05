@@ -40,6 +40,7 @@ LLM：
         "negative": 0.2
     }
 }
+当token为<eos>时，表示模型已经生成完毕。
 
 ASR：
 从asr:ASR_TO_PANEL【主动连接】panel:PANEL_FROM_ASR端口：

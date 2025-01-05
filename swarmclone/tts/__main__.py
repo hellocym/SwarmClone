@@ -1,5 +1,5 @@
 import socket
-from . import config
+from . import config, tts_config
 import json
 from queue import Queue
 import threading
@@ -8,6 +8,8 @@ from TTS.tts.configs.xtts_config import XttsConfig # type: ignore
 from TTS.tts.models.xtts import Xtts # type: ignore
 import soundfile as sf # type: ignore
 import playsound # type: ignore
+from time import time
+import os
 
 def get_data(sock: socket.socket, q: Queue[Optional[str]]):
     s = ""
@@ -23,24 +25,51 @@ def get_data(sock: socket.socket, q: Queue[Optional[str]]):
             break
         if data['from'] == "LLM":
             token = data['token']
+            if token == "<eos>":
+                q.put(s)
+                s = ""
+                continue
             s += data['token']
-            if any(c in s for c in ",，.。!！?？\n\r……()（）[]"):
+            for sep in ".!?。？！…\n\r":
+                if sep in token:
+                    splits = s.split(sep)
+                    for split in splits[:-1]:
+                        if len(split.strip()) > 1:
+                            q.put(split + sep)
+                    s = splits[-1]
+                    break
+            if len(s) >= 50:
                 q.put(s)
                 s = ""
     q.put(None)
 
+def play_sound(q_fname: Queue[Optional[str]]):
+    while True:
+        fname = q_fname.get()
+        if fname is None:
+            break
+        playsound.playsound(fname)
+        os.remove(fname)
+
 if __name__ == '__main__':
-    xtts_config = XttsConfig()
-    xtts_config.load_json("coqui/XTTS-v2/config.json")
-    model = Xtts.init_from_config(xtts_config)
-    model.load_checkpoint(xtts_config, "coqui/XTTS-v2", eval=True)
-    model.cuda()
+    try:
+        xtts_config = XttsConfig()
+        xtts_config.load_json(os.path.join(tts_config.MODEL_PATH, "config.json"))
+        model = Xtts.init_from_config(xtts_config)
+        model.load_checkpoint(xtts_config, tts_config.MODEL_PATH, eval=True)
+        model.cuda()
+    except:
+        print("模型加载失败！请检查是否有下载模型并正确设置模型路径参数。")
+        exit(1)
 
     q: Queue[Optional[str]] = Queue()
+    q_fname: Queue[Optional[str]] = Queue()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((config.PANEL_HOST, config.PANEL_TO_TTS))
         get_data_thread = threading.Thread(target=get_data, args=(sock, q))
         get_data_thread.start()
+        play_sound_thread = threading.Thread(target=play_sound, args=(q_fname,))
+        play_sound_thread.start()
         while True:
             if not q.empty():
                 s = q.get()
@@ -48,12 +77,15 @@ if __name__ == '__main__':
                     break
                 print(s)
                 outputs = model.synthesize(
-                    s,
+                    s.strip(),
                     xtts_config,
-                    speaker_wav="/data/编曲/声音/人声采样/evil.wav",
+                    speaker_wav=tts_config.REFERENCE_WAV_PATH,
                     language="en" if s.encode('utf-8').isascii() else "zh"
                 )
-                sf.write("/tmp/output.wav", outputs["wav"], 22050)
-                playsound.playsound("/tmp/output.wav")
+                fname = f"/tmp/voice{time()}.wav"
+                sf.write(fname, outputs["wav"], 22050)
+                q_fname.put(fname)
         sock.close()
+        q_fname.put(None)
         get_data_thread.join()
+        play_sound_thread.join()

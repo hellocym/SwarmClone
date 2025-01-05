@@ -9,8 +9,11 @@ def to_llm(from_asr_conn: socket.socket, to_llm_conn: socket.socket):
         if not data:
             break
         to_llm_conn.sendall(data)
-        if json.loads(data.decode())['from'] == "stop":
-            break
+        try:
+            if json.loads(data.decode())['from'] == "stop":
+                break
+        except:
+            pass
 
 def from_llm(from_llm_conn: socket.socket, to_tts_conn: socket.socket):
     while True:
@@ -18,8 +21,11 @@ def from_llm(from_llm_conn: socket.socket, to_tts_conn: socket.socket):
         if not data:
             break
         to_tts_conn.sendall(data)
-        if json.loads(data.decode())['from'] == "stop":
-            break
+        try:
+            if json.loads(data.decode())['from'] == "stop":
+                break
+        except:
+            pass
 
 if __name__ == '__main__':
     with (  socket.socket(socket.AF_INET, socket.SOCK_STREAM) as from_asr_sock, 

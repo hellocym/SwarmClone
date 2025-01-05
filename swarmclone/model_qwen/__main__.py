@@ -59,5 +59,11 @@ if __name__ == '__main__':
                 }
                 sock_output.sendall(json.dumps(data).encode())
                 generated_text += text
+            data = {
+                "from": "LLM",
+                "token": "<eos>",
+                "feelings": {}
+            } # 表示生成结束
+            sock_output.sendall(json.dumps(data).encode())
             messages.append({"role": "assistant", "content": generated_text})
         

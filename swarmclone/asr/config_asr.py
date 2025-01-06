@@ -2,10 +2,12 @@ from dataclasses import dataclass
 
 @dataclass
 class ASRConfig:
-    # 语音识别模型选择(paraformer)
+    # 语音识别模型选择(paraformer, zipformer)
     MODEL: str = "zipformer"
+    # 量化模型选择（fp32, int8）
+    QUANTIZED: str = "fp32"
     # 语音模型路径
-    MODELPATH="~/.swarmclone/asr/"
+    MODELPATH: str = "~/.swarmclone/asr/"
     # token.txt路径
     # 解码方法（greedy_search, modified_beam_search）
     DECODING_METHOD: str = "greedy_search"

@@ -10,7 +10,8 @@ def to_llm(from_asr_conn: socket.socket, to_llm_conn: socket.socket, to_frontend
         if not data:
             break
         to_llm_conn.sendall(data)
-        # to_frontend_conn.sendall(data)
+        if to_frontend_conn:
+            to_frontend_conn.sendall(data)
         try:
             if json.loads(data.decode())['from'] == "stop":
                 break
@@ -23,7 +24,8 @@ def from_llm(from_llm_conn: socket.socket, to_tts_conn: socket.socket, to_fronte
         if not data:
             break
         to_tts_conn.sendall(data)
-        # to_frontend_conn.sendall(data)
+        if to_frontend_conn:
+            to_frontend_conn.sendall(data)
         try:
             if json.loads(data.decode())['from'] == "stop":
                 break
@@ -59,10 +61,14 @@ if __name__ == '__main__':
         # print(f"UNITY connected from {to_frontend_addr}")
 
         try:
-            to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn))
+            to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn, to_frontend_sock))
             to_llm_thread.start()
-            from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn))
+            from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn, to_frontend_sock))
             from_llm_thread.start()
+            # to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn))
+            # to_llm_thread.start()
+            # from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn))
+            # from_llm_thread.start()
             to_llm_thread.join()
             from_llm_thread.join()
         except KeyboardInterrupt:

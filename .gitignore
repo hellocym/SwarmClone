@@ -182,3 +182,6 @@ Qwen/
 
 # Coqui TTS model
 coqui/
+
+# CosyVoice TTS model
+swarmclone/tts_cosy_voice/pretrained_models/

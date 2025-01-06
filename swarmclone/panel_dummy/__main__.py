@@ -4,26 +4,26 @@ import socket
 import json
 import subprocess
 
-def to_llm(from_asr_conn: socket.socket, to_llm_conn: socket.socket, to_frontend_conn: socket.socket):
+def to_llm(from_asr_conn: socket.socket, to_llm_conn: socket.socket, to_frontend_conn: socket.socket=None):
     while True:
         data = from_asr_conn.recv(4096)
         if not data:
             break
         to_llm_conn.sendall(data)
-        to_frontend_conn.sendall(data)
+        # to_frontend_conn.sendall(data)
         try:
             if json.loads(data.decode())['from'] == "stop":
                 break
         except:
             pass
 
-def from_llm(from_llm_conn: socket.socket, to_tts_conn: socket.socket, to_frontend_conn: socket.socket):
+def from_llm(from_llm_conn: socket.socket, to_tts_conn: socket.socket, to_frontend_conn: socket.socket=None):
     while True:
         data = from_llm_conn.recv(4096)
         if not data:
             break
         to_tts_conn.sendall(data)
-        to_frontend_conn.sendall(data)
+        # to_frontend_conn.sendall(data)
         try:
             if json.loads(data.decode())['from'] == "stop":
                 break
@@ -55,13 +55,13 @@ if __name__ == '__main__':
         print(f"LLM OUTPUT connected from {from_llm_addr}")
         to_tts_conn, to_tts_addr = to_tts_sock.accept()
         print(f"TTS connected from {to_tts_addr}")
-        to_frontend_conn, to_frontend_addr = to_frontend_sock.accept()
-        print(f"UNITY connected from {to_frontend_addr}")
+        # to_frontend_conn, to_frontend_addr = to_frontend_sock.accept()
+        # print(f"UNITY connected from {to_frontend_addr}")
 
         try:
-            to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn, to_frontend_conn))
+            to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn))
             to_llm_thread.start()
-            from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn, to_frontend_conn))
+            from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn))
             from_llm_thread.start()
             to_llm_thread.join()
             from_llm_thread.join()

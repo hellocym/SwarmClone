@@ -1,6 +1,6 @@
 import socket
-from . import config
 import json
+from . import config
 
 if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

@@ -1,9 +1,9 @@
 import asyncio
 import os
 from fastapi import FastAPI, Request  # type: ignore
-from . import config  # 正确示例
 from fastapi.staticfiles import StaticFiles  # type: ignore
 from fastapi.templating import Jinja2Templates  # type: ignore
+from . import config  # 正确示例
 
 app = FastAPI()
 

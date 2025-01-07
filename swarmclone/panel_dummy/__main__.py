@@ -1,8 +1,8 @@
-from . import config
 import threading
 import socket
 import json
 import subprocess
+from . import config
 
 def to_llm(from_asr_conn: socket.socket, to_llm_conn: socket.socket, to_frontend_conn: socket.socket):
     while True:

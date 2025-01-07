@@ -1,9 +1,10 @@
-from transformers import pipeline, TextIteratorStreamer # type: ignore
 import socket
 import threading
 import json
 import queue
-from . import config
+import os
+from transformers import pipeline, TextIteratorStreamer # type: ignore
+from . import config, qwen2_config
 
 q: queue.Queue[dict[str, str]] = queue.Queue()
 
@@ -24,13 +25,29 @@ def recv_msg(sock: socket.socket, q: queue.Queue[dict[str, str]]):
                     q.put({"role": "user", "content": message["text"]})
 
 if __name__ == '__main__':
-    pipe = pipeline(
-        'text-generation',
-        model='Qwen/Qwen2.5-0.5B-Instruct',
-        torch_dtype="auto",
-        device_map="auto",
-        max_new_tokens=1000,
-    )
+    successful = False
+    abs_model_path = os.path.expanduser(qwen2_config.MODEL_PATH)
+    while not successful:
+        try:
+            pipe = pipeline(
+                'text-generation',
+                model=abs_model_path,
+                torch_dtype="auto",
+                device_map="auto",
+                max_new_tokens=1000,
+            )
+            successful = True
+        except:
+            choice = input("加载模型失败，是否下载模型？(Y/n)")
+            if choice.lower() != "n":
+                import os
+                import huggingface_hub # type: ignore
+                huggingface_hub.snapshot_download(
+                    repo_id=qwen2_config.MODEL_ID,
+                    repo_type="model",
+                    local_dir=abs_model_path,
+                    endpoint="https://hf-mirror.com"
+                )
     streamer = TextIteratorStreamer(pipe.tokenizer, skip_prompt=True, skip_special_tokens=True)
     with (  socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_input,
             socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_output):

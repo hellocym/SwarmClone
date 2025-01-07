@@ -24,12 +24,56 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Understood</button>
+        <button type="button" id="action1" class="btn btn-primary" onclick="panel_self_action('action1', 'button1')">Understood</button>
       </div>
     </div>
   </div>
 </div>
 <script src="static/js/bootstarp/bootstrap.min.js"></script>
+<script type="text/javascript">
 
+  // 通用函数：显示加载动画
+  function showButtonLoading(action) {
+    document.getElementById(action).innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      Loading...
+    `;
+    document.getElementById(action).disabled = true;
+  }
+
+  function hideButtonLoading(action, title) {
+    document.getElementById(action).innerHTML = title;
+    document.getElementById(action).disabled = false;
+  }
+
+  async function sendRequest(action) {
+    try {
+      // TODO: 根据不同的用途，修改请求的URL(端口号)
+      const response = await fetch(`http://localhost:8080/${action}`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      console.log('Success:', data);
+      return data;
+    } catch (error) {
+      console.error('Error:', error);
+      return error;
+    }
+  }
+
+  // 面板前端向面板后端发送请求的通用函数
+  async function panel_self_action(action, component_type) {
+    // TODO: 根据组件类型，显示不同的加载动画
+    // TODO: 这里的模态窗按钮仅供测试，后续需要根据实际情况进行修改
+    if (component_type === 'button1') {
+      showButtonLoading(action);
+      await sendRequest(action);
+      hideButtonLoading(action, 'Understood')
+      $("#staticBackdrop").modal('hide');
+    }
+  }
+</script>
+<!-- TODO:解决 GET /static/js/jquery-3.7.1.js HTTP/1.1" 304 Not Modified 报错问题 -->
+<script src="static/js/jquery-3.7.1.js"></script>
 </body>
 </html>

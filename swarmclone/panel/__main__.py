@@ -1,8 +1,9 @@
+import asyncio
 import os
 from fastapi import FastAPI, Request  # type: ignore
-from . import config  # 正确示例
 from fastapi.staticfiles import StaticFiles  # type: ignore
 from fastapi.templating import Jinja2Templates  # type: ignore
+from . import config  # 正确示例
 
 app = FastAPI()
 
@@ -15,6 +16,11 @@ templates = Jinja2Templates(directory=static_dir)
 @app.get("/")
 def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.post("/action1")
+async def action1():
+    await asyncio.sleep(1)
+    return {"message": "Action 1 executed"}
 
 if __name__ == "__main__":
     import uvicorn

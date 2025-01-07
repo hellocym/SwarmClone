@@ -55,8 +55,8 @@ if __name__ == '__main__':
         print(f"LLM OUTPUT connected from {from_llm_addr}")
         to_tts_conn, to_tts_addr = to_tts_sock.accept()
         print(f"TTS connected from {to_tts_addr}")
-        # to_frontend_conn, to_frontend_addr = to_frontend_sock.accept()
-        # print(f"UNITY connected from {to_frontend_addr}")
+        to_frontend_conn, to_frontend_addr = to_frontend_sock.accept()
+        print(f"UNITY connected from {to_frontend_addr}")
 
         try:
             to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn, to_frontend_sock))

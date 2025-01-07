@@ -1,7 +1,7 @@
 import sys
+import os
 from pathlib import Path
 import sounddevice as sd # type: ignore
-import os
 import sherpa_onnx # type: ignore
 
 def assert_file_exists(filename: str):

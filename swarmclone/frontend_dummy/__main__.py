@@ -1,10 +1,10 @@
 import socket
-from . import config
 import threading
+import json
 from typing import Optional
 from queue import Queue, Empty
-import json
 from time import time
+from . import config
 
 def get_data(sock: socket.socket, q_llm: Queue[Optional[str]], q_asr: Queue[Optional[str]]):
     while True:

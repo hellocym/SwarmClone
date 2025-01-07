@@ -1,8 +1,8 @@
 import socket
-from . import config, asr_config
 import json
-from .sherpa import asr_init, create_recognizer
 import sounddevice as sd # type: ignore
+from .sherpa import asr_init, create_recognizer
+from . import config, asr_config
 
 if __name__ == '__main__':
 

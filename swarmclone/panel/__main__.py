@@ -19,7 +19,7 @@ def root(request: Request):
 
 @app.post("/action1")
 async def action1():
-    await asyncio.sleep(10)
+    await asyncio.sleep(1)
     return {"message": "Action 1 executed"}
 
 if __name__ == "__main__":

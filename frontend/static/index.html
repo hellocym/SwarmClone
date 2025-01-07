@@ -34,7 +34,7 @@
 
   // 通用函数：显示加载动画
   function showButtonLoading(action) {
-    document.getElementById(、377action).innerHTML = `
+    document.getElementById(action).innerHTML = `
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       Loading...
     `;
@@ -73,6 +73,7 @@
     }
   }
 </script>
+<!-- TODO:解决 GET /static/js/jquery-3.7.1.js HTTP/1.1" 304 Not Modified 报错问题 -->
 <script src="static/js/jquery-3.7.1.js"></script>
 </body>
 </html>

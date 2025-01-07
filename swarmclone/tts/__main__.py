@@ -1,15 +1,18 @@
+import os
 import socket
-from . import config, tts_config
 import json
-from queue import Queue
 import threading
+from queue import Queue
 from typing import Optional
+from time import time
+
+import playsound # type: ignore
+import soundfile as sf # type: ignore
 from TTS.tts.configs.xtts_config import XttsConfig # type: ignore
 from TTS.tts.models.xtts import Xtts # type: ignore
-import soundfile as sf # type: ignore
-import playsound # type: ignore
-from time import time
-import os
+
+from . import config, tts_config
+
 
 def get_data(sock: socket.socket, q: Queue[Optional[str]]):
     s = ""
@@ -52,15 +55,28 @@ def play_sound(q_fname: Queue[Optional[str]]):
         os.remove(fname)
 
 if __name__ == '__main__':
-    try:
-        xtts_config = XttsConfig()
-        xtts_config.load_json(os.path.join(tts_config.MODEL_PATH, "config.json"))
-        model = Xtts.init_from_config(xtts_config)
-        model.load_checkpoint(xtts_config, tts_config.MODEL_PATH, eval=True)
-        model.cuda()
-    except:
-        print("模型加载失败！请检查是否有下载模型并正确设置模型路径参数。")
-        exit(1)
+    successful = False
+    abs_model_path = os.path.expanduser(tts_config.MODEL_PATH)
+    while not successful:
+        try:
+            xtts_config = XttsConfig()
+            xtts_config.load_json(os.path.join(abs_model_path, "config.json"))
+            model = Xtts.init_from_config(xtts_config)
+            model.load_checkpoint(xtts_config, abs_model_path, eval=True)
+            model.cuda()
+        except:
+            print("模型加载失败！请检查是否有下载模型并正确设置模型路径参数。")
+            choice = input("是否下载默认模型？(Y/n)")
+            if choice.lower() != "n":
+                import huggingface_hub # type: ignore
+                huggingface_hub.snapshot_download(
+                    repo_id="coqui/XTTS-v2",
+                    repo_type="model",
+                    endpoint="https://hf-mirror.com",
+                    local_dir=abs_model_path
+                )
+        else:
+            successful = True
 
     q: Queue[Optional[str]] = Queue()
     q_fname: Queue[Optional[str]] = Queue()

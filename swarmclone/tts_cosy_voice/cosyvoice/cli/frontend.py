@@ -60,8 +60,9 @@ class CosyVoiceFrontEnd:
         self.use_ttsfrd = use_ttsfrd
         if self.use_ttsfrd:
             self.frd = ttsfrd.TtsFrontendEngine()
+            # there have some change to march dir
             ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-            RESOURCE_DIR = "/" + os.path.join(*ROOT_DIR.split("/")[1:-2], "pretrained_models/CosyVoice-ttsfrd/resource")
+            RESOURCE_DIR = os.path.expanduser("~/.swarmclone/tts_cosy_voice/CosyVoice-ttsfrd/resource")
             assert self.frd.initialize(RESOURCE_DIR) is True, \
                 'failed to initialize ttsfrd resource'
             self.frd.set_lang_type('pinyinvg')

@@ -11,6 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# 引入包控制程序退出
+import sys
+import zipfile
+
 import os
 import time
 from tqdm import tqdm
@@ -29,10 +34,33 @@ class CosyVoice:
         self.instruct = True if '-Instruct' in model_dir else False
         self.model_dir = model_dir
         self.fp16 = fp16
+        # 修改下载逻辑
+        pretrained_dir = os.path.dirname(model_dir)
+        models_name = os.path.basename(model_dir)
+        # 下载 ttsfrd resource
+        if not os.path.exists(f"{pretrained_dir}/CosyVoice-ttsfrd/resource"):
+            download = input(" * 未找到必要的 ttsfrd 资源，是否下载[y/n]：")
+            if download.strip().lower() == "y":
+                snapshot_download('iic/CosyVoice-ttsfrd', local_dir=f"{pretrained_dir}/CosyVoice-ttsfrd")
+                with zipfile.ZipFile(f"{pretrained_dir}/CosyVoice-ttsfrd/resource.zip") as zip_ref:
+                    zip_ref.extractall(f"{pretrained_dir}/CosyVoice-ttsfrd/")
+                os.remove(f"{pretrained_dir}/CosyVoice-ttsfrd/resource.zip")
+                os.remove(f"{pretrained_dir}/CosyVoice-ttsfrd/resource.tar")
+            else:
+                print(" * 取消下载。")
+                sys.exit(0)
+        # 下载预训练模型
         if not os.path.exists(model_dir):
-            model_dir = snapshot_download(model_dir)
+            download = input(f" * 未找到指定的 {models_name} 预训练模型，是否下载[y/n]：")
+            if download.strip().lower() == "y":
+                snapshot_download(f'iic/{models_name}', local_dir=model_dir)
+            else:
+                print(" * 取消下载。")
+                sys.exit(0)
+                
         with open('{}/cosyvoice.yaml'.format(model_dir), 'r') as f:
             configs = load_hyperpyyaml(f)
+        
         assert get_model_type(configs) != CosyVoice2Model, 'do not use {} for CosyVoice initialization!'.format(model_dir)
         self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
                                           configs['feat_extractor'],
@@ -131,6 +159,7 @@ class CosyVoice2(CosyVoice):
             model_dir = snapshot_download(model_dir)
         with open('{}/cosyvoice.yaml'.format(model_dir), 'r') as f:
             configs = load_hyperpyyaml(f, overrides={'qwen_pretrain_path': os.path.join(model_dir, 'CosyVoice-BlankEN')})
+            
         assert get_model_type(configs) == CosyVoice2Model, 'do not use {} for CosyVoice2 initialization!'.format(model_dir)
         self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
                                           configs['feat_extractor'],

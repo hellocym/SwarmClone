@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), 'third_party/Matcha-TTS'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'resources/third_party/Matcha-TTS'))
 
 import json
 import socket
@@ -9,9 +9,10 @@ import threading
 import soundfile as sf
 import torchaudio
 import warnings
+import shutil
 
 from time import time
-from . import config
+from . import config, tts_config
 from queue import Queue
 from typing import Optional
 
@@ -62,13 +63,22 @@ def play_sound(q_fname: Queue[Optional[str]]):
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*")
     warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
-    
-    base_dir = os.path.dirname(__file__)
-    pretrained_model_path = os.path.join(base_dir, 'pretrained_models', 'CosyVoice-300M-SFT')
-    # prompt_wav_path = os.path.join(base_dir, 'zero_shot_prompt.wav')
-    
-    cosyvoice = CosyVoice(pretrained_model_path)
-
+    try:
+        model_path = os.path.expanduser(os.path.join(tts_config.MODELPATH, tts_config.MODEL))
+        cosyvoice = CosyVoice(model_path, fp16=tts_config.FLOAT16)
+    except Exception as e:
+        err_msg = str(e).lower()
+        if ("file" in err_msg) and ("doesn't" in err_msg) and ("exist" in err_msg):
+            catch = input(" * S.C. CosyVoice TTS 发生了错误，这可能是由于模型下载不完全导致的，是否清理缓存TTS模型？[y/n] ")
+            if catch.strip().lower() == "y":
+                shutil.rmtree(os.path.expanduser(tts_config.MODELPATH), ignore_errors=True)
+                print(" * 清理完成，请重新运行该模块。")
+                sys.exit(0)
+            else:
+                raise
+        else:
+            raise
+        
     q: Queue[Optional[str]] = Queue()
     q_fname: Queue[Optional[str]] = Queue()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

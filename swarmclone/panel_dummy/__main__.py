@@ -59,9 +59,9 @@ if __name__ == '__main__':
         print(f"UNITY connected from {to_frontend_addr}")
 
         try:
-            to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn, to_frontend_sock))
+            to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn, to_frontend_conn))
             to_llm_thread.start()
-            from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn, to_frontend_sock))
+            from_llm_thread = threading.Thread(target=from_llm, args=(from_llm_conn, to_tts_conn, to_frontend_conn))
             from_llm_thread.start()
             to_llm_thread.join()
             from_llm_thread.join()
@@ -72,4 +72,3 @@ if __name__ == '__main__':
             to_llm_conn.close()
             from_asr_sock.close()
             to_llm_sock.close()
-

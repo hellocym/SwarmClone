@@ -4,31 +4,25 @@
     <meta charset="UTF-8">
     <title>SwarmClone Control Panel</title>
     <link rel="stylesheet" href="static/css/bootstarp/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/index.css">
 </head>
 <body>
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-  Launch static backdrop modal
-</button>
 
-<!-- Modal -->
-<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        Hello World!
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" id="action1" class="btn btn-primary" onclick="panel_self_action('action1', 'button1')">Understood</button>
+<nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">AI控制面板</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-link active" aria-current="page" href="#">首页</a>
+        <a class="nav-link" href="/monitor">监控</a>
+        <a class="nav-link" href="/settings">设置</a>
       </div>
     </div>
   </div>
-</div>
+</nav>
 <script src="static/js/bootstarp/bootstrap.min.js"></script>
 <script type="text/javascript">
 

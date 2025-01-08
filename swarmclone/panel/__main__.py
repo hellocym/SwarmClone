@@ -17,6 +17,15 @@ templates = Jinja2Templates(directory=static_dir)
 def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/monitor")
+def root(request: Request):
+    return templates.TemplateResponse("html/pages/monitor.html", {"request": request})
+
+
+@app.get("/settings")
+def root(request: Request):
+    return templates.TemplateResponse("html/pages/settings.html", {"request": request})
+
 @app.post("/action1")
 async def action1():
     await asyncio.sleep(1)

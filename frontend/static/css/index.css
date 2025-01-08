@@ -1,0 +1,11 @@
+body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: rgba(22, 28, 45, 0);
+    background-color: #fff;
+    color: #161c2d;
+    font-family: var(--bs-font-sans-serif);
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.6;
+    margin: 0;
+}

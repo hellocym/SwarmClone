@@ -46,7 +46,7 @@ frozenlist==1.5.0
 fsspec==2024.12.0
 g2pkk==0.1.2
 grpcio==1.68.1
-gruut==2.2.3
+gruut==2.4.0
 gruut-ipa==0.13.0
 gruut_lang_de==2.0.1
 gruut_lang_en==2.0.1
@@ -72,7 +72,7 @@ kiwisolver==1.4.7
 langcodes==3.5.0
 language_data==1.3.0
 lazy_loader==0.4
-librosa==0.10.0
+librosa==0.10.2
 llvmlite==0.43.0
 marisa-trie==1.2.1
 Markdown==3.7
@@ -91,7 +91,7 @@ networkx==2.8.8
 nltk==3.9.1
 num2words==0.5.14
 numba==0.60.0
-numpy==1.22.0
+numpy==1.25.2
 nvidia-cublas-cu12==12.4.5.8
 nvidia-cuda-cupti-cu12==12.4.127
 nvidia-cuda-nvrtc-cu12==12.4.127
@@ -133,6 +133,7 @@ python-crfsuite==0.9.11
 python-dateutil==2.9.0.post0
 pytz==2024.2
 PyYAML==6.0.2
+pycairo==1.22.0
 realtimetts==0.4.21
 regex==2024.11.6
 requests==2.32.3

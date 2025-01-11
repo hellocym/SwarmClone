@@ -1,7 +1,5 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), 'resources/third_party/Matcha-TTS'))
-
 import json
 import socket
 import playsound
@@ -10,6 +8,7 @@ import soundfile as sf
 import torchaudio
 import warnings
 import shutil
+import tempfile
 
 from time import time
 from . import config, tts_config
@@ -57,12 +56,15 @@ def play_sound(q_fname: Queue[Optional[str]]):
         fname = q_fname.get()
         if fname is None:
             break
-        playsound.playsound(fname)
+        playsound.playsound(os.path.abspath(fname))
         os.remove(fname)
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*")
     warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
+    warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_only=False.*")
+    
+    temp_dir = tempfile.gettempdir()
     try:
         model_path = os.path.expanduser(os.path.join(tts_config.MODELPATH, tts_config.MODEL))
         cosyvoice = CosyVoice(model_path, fp16=tts_config.FLOAT16)
@@ -95,7 +97,7 @@ if __name__ == "__main__":
                 if not s or s.isspace():
                     continue
                 outputs = list(cosyvoice.inference_sft(s, '中文女', stream=False))[0]["tts_speech"]
-                fname = f"/tmp/voice{time()}.wav"
+                fname = os.path.join(temp_dir, f"voice{time()}.mp3")
                 torchaudio.save(fname, outputs, 22050)
                 q_fname.put(fname)
         sock.close()

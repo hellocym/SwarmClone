@@ -1,6 +1,5 @@
-torch==2.5.1
 accelerate==1.2.1
-TTS==0.22.0
+# TTS==0.22.0
 tqdm==4.67.1
 matplotlib==3.8.4
 transformers==4.47.1

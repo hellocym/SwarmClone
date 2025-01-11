@@ -2,20 +2,19 @@ import os
 import sys
 import json
 import socket
-import playsound
-import threading
-import soundfile as sf
-import torchaudio
-import warnings
 import shutil
 import tempfile
+import warnings
+import threading
 
 from time import time
-from . import config, tts_config
 from queue import Queue
 from typing import Optional
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+import playsound
+import torchaudio
+
+from . import config, tts_config
 from cosyvoice.cli.cosyvoice import CosyVoice, CosyVoice2
 from cosyvoice.utils.file_utils import load_wav
 
@@ -63,6 +62,7 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*")
     warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm is deprecated.*")
     warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_only=False.*")
+    warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_norm.*")
     
     temp_dir = tempfile.gettempdir()
     try:

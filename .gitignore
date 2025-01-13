@@ -183,4 +183,7 @@ Qwen/
 # Coqui TTS model
 coqui/
 
+data.db
+swarmclone/dist
 
+*.db

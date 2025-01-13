@@ -5,10 +5,12 @@ class Config:
     SPECIAL_TOKENS: dict[str, int] = field(default_factory=lambda: {"<pad>": 0, "<eos>": 1, "<unk>": 2})
     NUM_WORKERS: int = 4
     DEVICE: str = "cuda"
+    
+    CONFIG_FILE = './dist/server.toml'
 
     # 网络配置
     PANEL_HOST: str = "localhost"
-    PANEL_WEB_PORT: int = 8080
+    CONTROLLER_PORT: int = 8080
     PANEL_TO_LLM: int = 8000
     PANEL_TO_TTS: int = 8001
     PANEL_TO_UNITY: int = 8002

@@ -44,7 +44,7 @@ if __name__ == '__main__':
         from_llm_sock.listen(1)
         to_tts_sock.bind((config.PANEL_HOST, config.PANEL_TO_TTS))
         to_tts_sock.listen(1)
-        to_frontend_sock.bind((config.PANEL_HOST, config.PANEL_TO_UNITY))
+        to_frontend_sock.bind((config.PANEL_HOST, config.PANEL_TO_FRONTEND))
         to_frontend_sock.listen(1)
 
         from_asr_conn, from_asr_addr = from_asr_sock.accept()
@@ -56,7 +56,7 @@ if __name__ == '__main__':
         to_tts_conn, to_tts_addr = to_tts_sock.accept()
         print(f"TTS connected from {to_tts_addr}")
         to_frontend_conn, to_frontend_addr = to_frontend_sock.accept()
-        print(f"UNITY connected from {to_frontend_addr}")
+        print(f"FRONTEND connected from {to_frontend_addr}")
 
         try:
             to_llm_thread = threading.Thread(target=to_llm, args=(from_asr_conn, to_llm_conn, to_frontend_conn))

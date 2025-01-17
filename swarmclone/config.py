@@ -13,7 +13,7 @@ class Config:
     CONTROLLER_PORT: int = 8080
     PANEL_TO_LLM: int = 8000
     PANEL_TO_TTS: int = 8001
-    PANEL_TO_UNITY: int = 8002
+    PANEL_TO_FRONTEND: int = 8002
     PANEL_FROM_LLM: int = 8003
     PANEL_FROM_ASR: int = 8004
     PANEL_FROM_CHAT: int = 8005

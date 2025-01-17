@@ -80,6 +80,7 @@ if __name__ == '__main__':
 
     q: Queue[Optional[str]] = Queue()
     q_fname: Queue[Optional[str]] = Queue()
+    abs_reference_wav_path = os.path.join(abs_model_path, tts_config.REFERENCE_WAV_PATH)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((config.PANEL_HOST, config.PANEL_TO_TTS))
         get_data_thread = threading.Thread(target=get_data, args=(sock, q))
@@ -97,7 +98,7 @@ if __name__ == '__main__':
                 outputs = model.synthesize(
                     s.strip(),
                     xtts_config,
-                    speaker_wav=tts_config.REFERENCE_WAV_PATH,
+                    speaker_wav=abs_reference_wav_path,
                     language="en" if s.encode('utf-8').isascii() else "zh"
                 )
                 fname = f"/tmp/voice{time()}.wav"

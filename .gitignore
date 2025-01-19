@@ -185,4 +185,4 @@ coqui/
 
 *.toml
 *.db
-*.toml
+Dockerfile

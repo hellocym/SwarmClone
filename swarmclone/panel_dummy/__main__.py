@@ -53,34 +53,34 @@ def handle_submodule(submodule: int, sock: socket.socket) -> None:
             if req.get("type") == "signal" and req.get("payload") == "ready":
                 break
         time.sleep(0.1)
-    print(f"{SUBMODULE_NAMES[submodule]} is online.")
-    try:
-        while not running: # 等待启动
-            time.sleep(0.1)
-        CONNECTIONS[submodule].sendall(dumps([PANEL_START]).encode("utf-8")) # type: ignore
+        print(f"{SUBMODULE_NAMES[submodule]} is online.")
+        try:
+            while not running: # 等待启动
+                time.sleep(0.1)
+            CONNECTIONS[submodule].sendall(dumps([PANEL_START]).encode("utf-8")) # type: ignore
 
-        while running:
-            # CONNECTIONS[submodule]必然不会是None
-            data = CONNECTIONS[submodule].recv(1024) # type: ignore
-            if not data:
-                running = False
-                break
-            # 逐个解析请求并将其转发给相应的模块
-            loader.update(data.decode())
-            for request in loader.get_requests():
-                print(f"{SUBMODULE_NAMES[submodule]}: {request}")
-                request_bytes = dumps([request]).encode()
-                for receiver in CONN_TABLE[submodule][request["type"] == "data"]:
-                    if CONNECTIONS[receiver]:
-                        CONNECTIONS[receiver].sendall(request_bytes) # type: ignore
-    except KeyboardInterrupt:
-        running = False
+            while running:
+                # CONNECTIONS[submodule]必然不会是None
+                data = CONNECTIONS[submodule].recv(1024) # type: ignore
+                if not data:
+                    running = False
+                    break
+                # 逐个解析请求并将其转发给相应的模块
+                loader.update(data.decode())
+                for request in loader.get_requests():
+                    print(f"{SUBMODULE_NAMES[submodule]}: {request}")
+                    request_bytes = dumps([request]).encode()
+                    for receiver in CONN_TABLE[submodule][request["type"] == "data"]:
+                        if CONNECTIONS[receiver]:
+                            CONNECTIONS[receiver].sendall(request_bytes) # type: ignore
+        except KeyboardInterrupt:
+            running = False
 
-    # 让模块停止并退出
-    if CONNECTIONS[submodule] is not None:
-        CONNECTIONS[submodule].sendall(dumps([PANEL_STOP]).encode("utf-8")) # type: ignore
-        CONNECTIONS[submodule].close() # type: ignore
-        CONNECTIONS[submodule] = None
+        # 让模块停止并退出
+        if CONNECTIONS[submodule] is not None:
+            CONNECTIONS[submodule].sendall(dumps([PANEL_STOP]).encode("utf-8")) # type: ignore
+            CONNECTIONS[submodule].close() # type: ignore
+            CONNECTIONS[submodule] = None
 
 if __name__ == '__main__':
     running = False

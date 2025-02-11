@@ -14,6 +14,7 @@ import torchaudio   # type: ignore
 import pygame
 
 from . import tts_config
+from .funcs import is_panel_ready, tts_generate
 from ..request_parser import *
 from ..config import config
 from cosyvoice.cli.cosyvoice import CosyVoice   # type: ignore
@@ -23,17 +24,13 @@ from .align import download_model_and_dict, init_mfa_models, align, match_textgr
 MODULE_READY = MODULE_READY_TEMPLATE
 MODULE_READY["from"] = MODULE_READY["from"].format("tts") # type: ignore
 
-def is_panel_ready(sock: socket.socket):
-    msg = sock.recv(1024)
-    return loads(msg.decode())[0] == PANEL_START
-
 # 播放器
 pygame_mixer = pygame.mixer   
 pygame_mixer.init()
 # 阻塞生成
 chunk = False
 # 生成队列
-q: Queue[List[str]] = Queue()
+q: Queue[List[str | EmotionType]] = Queue()
 # 播放队列
 q_fname: Queue[List[str]] = Queue()
 
@@ -44,7 +41,11 @@ def get_data(sock: socket.socket):
     global q_fname
     s = ""
     while True:
-        msg = sock.recv(1024)
+        try:
+            msg = sock.recv(1024)
+        except Exception as e:
+            print(e)
+            sys.exit(0)
         if not msg:
             break
         try:
@@ -55,11 +56,16 @@ def get_data(sock: socket.socket):
         match data:
             case x if x == PANEL_STOP:
                 break
-            case {"from": "llm", "type": "data", "payload": {"content": tokens, "id": sentence_id}}:
-                q.put([sentence_id, tokens])    # type: ignore
+            case {"from": "llm", 
+                  "type": "data", 
+                  "payload": {
+                      "content": tokens, 
+                      "id": sentence_id,
+                      "emotion": emotions}}:
+                q.put([sentence_id, tokens, emotions])    # type: ignore
                 continue
             case {'from': 'llm', 'type': 'signal', 'payload': 'eos'}:
-                q.put(["<eos>", "<eos>"])
+                q.put(["<eos>", "<eos>", 'eos'])
                 continue
             case x if x == ASR_ACTIVATE:
                 pygame_mixer.music.fadeout(200)
@@ -68,7 +74,7 @@ def get_data(sock: socket.socket):
                     q.get()
                 while not q_fname.empty():
                     q_fname.get()
-    q.put(["<eos>", "<eos>"])
+    q.put(["<eos>", "<eos>", "<eos>"])
 
 def play_sound(sock: socket.socket):
     """ 播放音频，发送结束信号
@@ -127,8 +133,15 @@ if __name__ == "__main__":
     # TTS MODEL 初始化
     temp_dir = tempfile.gettempdir()
     try:
-        model_path = os.path.expanduser(os.path.join(tts_config.MODELPATH, tts_config.MODEL))
-        cosyvoice = CosyVoice(model_path, fp16=tts_config.FLOAT16)
+        model_path = os.path.expanduser(tts_config.MODELPATH)
+        is_linux = sys.platform.startswith("linux")
+        if is_linux:
+            print(f" * 将使用 {tts_config.INS_MODEL} & {tts_config.SFT_MODEL} 进行生成。")
+            cosyvoice_sft = CosyVoice(os.path.join(model_path, tts_config.SFT_MODEL), fp16=tts_config.FLOAT16)
+            cosyvoice_ins = CosyVoice(os.path.join(model_path, tts_config.INS_MODEL), fp16=tts_config.FLOAT16)
+        else:
+            print(f" * 将使用 {tts_config.INS_MODEL} 进行生成。")
+            cosyvoice_ins = CosyVoice(os.path.join(model_path, tts_config.INS_MODEL), fp16=tts_config.FLOAT16)
     except Exception as e:
         err_msg = str(e).lower()
         if ("file" in err_msg) and ("doesn't" in err_msg) and ("exist" in err_msg):
@@ -144,11 +157,13 @@ if __name__ == "__main__":
     
     # MFA MODEL 初始化
     mfa_dir = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa"))
-    if not (os.path.exists(mfa_dir) and
-            os.path.exists(os.path.join(mfa_dir, "mandarin_china_mfa.dict")) and
-            os.path.exists(os.path.join(mfa_dir, "mandarin_mfa.zip")) and
-            os.path.exists(os.path.join(mfa_dir, "english_mfa.zip")) and
-            os.path.exists(os.path.join(mfa_dir, "english_mfa.dict"))):
+    if not (
+        os.path.exists(mfa_dir) and
+        os.path.exists(os.path.join(mfa_dir, "mandarin_china_mfa.dict")) and
+        os.path.exists(os.path.join(mfa_dir, "mandarin_mfa.zip"))
+        # os.path.exists(os.path.join(mfa_dir, "english_mfa.zip")) and
+        # os.path.exists(os.path.join(mfa_dir, "english_mfa.dict"))
+        ):
         print(" * SwarmClone 使用 Montreal Forced Aligner 进行对齐，开始下载: ")
         download_model_and_dict(tts_config)
     zh_acoustic, zh_lexicon, zh_tokenizer, zh_aligner = init_mfa_models(tts_config, lang="zh-CN")
@@ -168,18 +183,22 @@ if __name__ == "__main__":
         play_sound_thread.start()
         while True:
             if not q.empty():
-                sentence_id, s = q.get()
+                sentence_id, s, emotions = q.get()
                 if s is None:
                     break
-                if not s or s.isspace():
+                if not s or s.isspace():    # type: ignore
                     continue
                 if sentence_id == "<eos>":
                     q_fname.put(["<eos>", "<eos>", "<eos>", "<eos>"])
                     continue
                 chunk = False
                 try:
-                    s = s.strip()
-                    outputs = list(cosyvoice.inference_sft(s.strip(), '中文女', stream=False))[0]["tts_speech"]
+                    output = tts_generate(tts=[cosyvoice_ins] if not is_linux
+                                          else [cosyvoice_sft, cosyvoice_ins],
+                                          s=s.strip(),              # type: ignore
+                                          tune=tts_config.TUNE,
+                                          emotions=emotions,        # type: ignore
+                                          is_linux=is_linux)
                 except:
                     print(f" * 生成时出错，跳过了 '{s}'。")
                     continue
@@ -190,7 +209,7 @@ if __name__ == "__main__":
 
                 # 音频文件
                 audio_name = os.path.join(temp_dir, f"voice{time()}.mp3")
-                torchaudio.save(audio_name, outputs, 22050)
+                torchaudio.save(audio_name, output, 22050)
                 # 字幕文件
                 txt_name = audio_name.replace(".mp3", ".txt")
                 open(txt_name, "w", encoding="utf-8").write(s)

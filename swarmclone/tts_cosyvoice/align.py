@@ -1,25 +1,26 @@
 import os
-import requests
+import requests   # type: ignore
+import regex  # type: ignore
 
 from pathlib import Path
 
 import pywrapfst
-
-from tqdm import tqdm
-
-from kalpy.utterance import  Segment
-from kalpy.feat.cmvn import CmvnComputer
-from kalpy.fstext.lexicon import LexiconCompiler
-from kalpy.fstext.lexicon import HierarchicalCtm
-from kalpy.utterance import Utterance as KalpyUtterance
+import textgrid   # type: ignore
 
 from . import tts_config
-from montreal_forced_aligner import config
-from montreal_forced_aligner.alignment import PretrainedAligner
-from montreal_forced_aligner.models import AcousticModel
-from montreal_forced_aligner.tokenization.spacy import generate_language_tokenizer
-from montreal_forced_aligner.corpus.classes import FileData
-from montreal_forced_aligner.online.alignment import align_utterance_online
+from zhconv import convert   # type: ignore
+from tqdm import tqdm   # type: ignore
+from kalpy.utterance import  Segment   # type: ignore
+from kalpy.feat.cmvn import CmvnComputer   # type: ignore
+from kalpy.fstext.lexicon import LexiconCompiler   # type: ignore
+from kalpy.fstext.lexicon import HierarchicalCtm   # type: ignore
+from kalpy.utterance import Utterance as KalpyUtterance   # type: ignore
+from montreal_forced_aligner import config   # type: ignore
+from montreal_forced_aligner.alignment import PretrainedAligner   # type: ignore
+from montreal_forced_aligner.models import AcousticModel   # type: ignore
+from montreal_forced_aligner.tokenization.spacy import generate_language_tokenizer   # type: ignore
+from montreal_forced_aligner.corpus.classes import FileData   # type: ignore
+from montreal_forced_aligner.online.alignment import align_utterance_online   # type: ignore
 
 def download_file(url, dest_path):
     response = requests.get(url, stream=True)
@@ -46,15 +47,22 @@ def download_model_and_dict(tts_config):
     files = [["https://github.com/MontrealCorpusTools/mfa-models/releases/download/acoustic-mandarin_mfa-v3.0.0/mandarin_mfa.zip", 
               os.path.join(mfa_model_path, "mandarin_mfa.zip")], 
             ["https://github.com/MontrealCorpusTools/mfa-models/releases/download/dictionary-mandarin_china_mfa-v3.0.0/mandarin_china_mfa.dict", 
-              os.path.join(mfa_model_path, "mandarin_china_mfa.dict")]]
+              os.path.join(mfa_model_path, "mandarin_china_mfa.dict")],
+            ["https://github.com/MontrealCorpusTools/mfa-models/releases/download/acoustic-english_mfa-v3.1.0/english_mfa.zip", 
+              os.path.join(mfa_model_path, "english_mfa.zip")], 
+            ["https://github.com/MontrealCorpusTools/mfa-models/releases/download/dictionary-english_mfa-v3.1.0/english_mfa.dict", 
+              os.path.join(mfa_model_path, "english_mfa.dict")]]
     for file in files:
         if not os.path.exists(file[1]):
             download_file(file[0], file[1])
     
     
-def init_mfa_models(tts_config):
-    mfa_dict_path       = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa", "mandarin_china_mfa.dict"))
-    mfa_model_path      = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa", "mandarin_mfa.zip"))
+def init_mfa_models(tts_config, lang="zh-CN"):
+    lang_zh_cn = ["mandarin_china_mfa.dict", "mandarin_mfa.zip"]
+    lang_en_us = ["english_mfa.dict", "english_mfa.zip"]
+    using_lang = lang_zh_cn if lang == "zh-CN" else lang_en_us
+    mfa_dict_path       = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa", using_lang[0]))
+    mfa_model_path      = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa", using_lang[1]))
     dictionary_path     = Path(mfa_dict_path)
     acoustic_model_path = Path(mfa_model_path)
 
@@ -137,6 +145,7 @@ def align(sound_file_path, text_file_path, acoustic_model, lexicon_compiler, tok
             lexicon_compiler,
             tokenizer=tokenizer,
             g2p_model=None,
+            beam=15,
             **align_options,
         )
         file_ctm.word_intervals.extend(ctm.word_intervals)    
@@ -145,3 +154,69 @@ def align(sound_file_path, text_file_path, acoustic_model, lexicon_compiler, tok
         output_path.parent.mkdir(parents=True, exist_ok=True)
     file_ctm.export_textgrid(output_path, file_duration=file.wav_info.duration, output_format=output_format)
     
+    
+def match_textgrid(textgrid_path, text_path):
+    text = open(text_path, "r", encoding="utf-8").read().strip()
+    tg = textgrid.TextGrid.fromFile(textgrid_path)
+    tg = [interval for tier in tg if tier.name == "words" for interval in tier if interval.mark != "<eps>"]
+    
+    wait_to_send = []
+    i = 0
+    num_past_unk = 0
+    last_checked_text_idx = 0
+    while i < len(tg):
+        # 处理句中的 <unk>
+        while tg[i].mark == "<unk>" and i < len(tg) - 1:
+            num_past_unk += 1
+            i += 1
+        # 处理最后一个 token 是 <unk> 的情况
+        if (i == len(tg) - 1 and tg[i].mark == "<unk>"):
+            idx = len(text)
+            num_past_unk += 1
+        else:
+            idx = text.lower().find(convert(tg[i].mark.lower(), 'zh-cn'), last_checked_text_idx)
+
+        # 获取原 token
+        tg[i].mark = text[idx: idx + len(tg[i].mark)]
+        # 获取第一个 token 前的标点符号
+        if i == 0 and idx != 0:
+            have_marks_begin = 1
+            while regex.match(r"\p{P}", text[idx - have_marks_begin]):
+                tg[i].mark = text[idx - have_marks_begin] + tg[i].mark
+                idx -= 1
+                if idx == 0:
+                    break
+        # 获取紧随 token 后的标点符号
+        try:
+            have_marks = 1
+            following_idx = idx + len(tg[i].mark) - 1
+            while regex.match(r"\p{P}", text[following_idx + have_marks]):
+                tg[i].mark += text[following_idx + have_marks]
+                have_marks += 1
+        except:
+            pass
+        # 获取错过的英语单词
+        past_word = text[last_checked_text_idx:idx].split()
+        
+        # 对可以匹配上的英文单词进行处理
+        if num_past_unk == len(past_word):
+            for j in range(num_past_unk):
+                wait_to_send.append({
+                    "token": past_word[j] if not past_word[j].isascii() else past_word[j] + " ",
+                    "duration": tg[i - num_past_unk + j].maxTime - tg[i - num_past_unk + j].minTime
+                })
+        # 对匹配不上的英文单词进行处理
+        elif num_past_unk > 0:
+            wait_to_send.append({
+                "token": " ".join(past_word) + " ",
+                "duration": tg[i].maxTime - tg[i - num_past_unk].minTime
+            })
+        
+        if tg[i].mark != "<nuk>":
+            wait_to_send.append({"token": tg[i].mark if not tg[i].mark.isascii() else tg[i].mark + " ",
+                                "duration": tg[i].maxTime - tg[i].minTime})
+
+        num_past_unk = 0
+        last_checked_text_idx = idx + len(tg[i].mark)
+        i += 1
+    return [interval for interval in wait_to_send if not interval["token"].isspace()]

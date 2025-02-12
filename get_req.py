@@ -57,10 +57,10 @@ requirements = {
 def log_info(info, level):
     match level.lower():
         case "error":
-            print(" [Error] " + info)
+            print("[Error]  \t" + info)
             sys.exit(0)
         case "notice":
-            print(" [Notice]" + info)
+            print("[Notice]\t" + info)
 
 
 def install_conda_packages(packages, channel):
@@ -88,12 +88,11 @@ print(
                 已安装 PyTorch == 2.5.1。
     
 [get_req.py]    开始检查先决条件。
-    
 """
 )
 
 try:
-    subprocess.run(["conda", "--version"], check=True)
+    subprocess.run(["conda", "--version"], check=True, stdout=subprocess.DEVNULL)
     if os.environ.get("CONDA_DEFAULT_ENV") == "base":
         log_info("您正在向 base 环境中安装依赖，是否继续 [y/n]: ", "notice")
         check = input()
@@ -116,9 +115,8 @@ print(
                 2. MiniLM & Qwen2.5
                 3. Cosyvoice TTS
                 
-[Noitce]        现在开始安装吗？[y/n]
-"""
-)
+[Noitce]        现在开始安装吗？[y/n] """
+, end="")
 
 install = input()
 

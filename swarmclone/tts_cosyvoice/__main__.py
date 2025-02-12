@@ -39,7 +39,6 @@ def get_data(sock: socket.socket):
     global chunk
     global q
     global q_fname
-    s = ""
     while True:
         try:
             msg = sock.recv(1024)
@@ -194,11 +193,11 @@ if __name__ == "__main__":
                 chunk = False
                 try:
                     output = tts_generate(tts=[cosyvoice_ins] if not is_linux
-                                          else [cosyvoice_sft, cosyvoice_ins],
-                                          s=s.strip(),              # type: ignore
-                                          tune=tts_config.TUNE,
-                                          emotions=emotions,        # type: ignore
-                                          is_linux=is_linux)
+                                            else [cosyvoice_sft, cosyvoice_ins],
+                                            s=s.strip(),              # type: ignore
+                                            tune=tts_config.TUNE,
+                                            emotions=emotions,        # type: ignore
+                                            is_linux=is_linux)
                 except:
                     print(f" * 生成时出错，跳过了 '{s}'。")
                     continue
@@ -208,16 +207,16 @@ if __name__ == "__main__":
                     continue
 
                 # 音频文件
-                audio_name = os.path.join(temp_dir, f"voice{time()}.mp3")
+                audio_name = os.path.join(temp_dir, f"voice{time()}.wav")
                 torchaudio.save(audio_name, output, 22050)
                 # 字幕文件
-                txt_name = audio_name.replace(".mp3", ".txt")
+                txt_name = audio_name.replace(".wav", ".txt")
                 open(txt_name, "w", encoding="utf-8").write(s)
                 # 对齐文件
                 # if s.isascii():
                 #     align(audio_name, txt_name, en_acoustic, en_lexicon, en_tokenizer, en_aligner)
                 # else:
-                align_name = audio_name.replace(".mp3", ".TextGrid")
+                align_name = audio_name.replace(".wav", ".TextGrid")
                 try:
                     align(audio_name, txt_name, zh_acoustic, zh_lexicon, zh_tokenizer, zh_aligner)
                     q_fname.put([sentence_id, audio_name, txt_name, align_name])

@@ -17,7 +17,7 @@ requirements = {
             "soundfile==0.13.0",
             "playsound==1.3.0",
             # tts
-            "https://github.com/MomoiaMoia/Minimum-CosyVoice/releases/download/0.2.0/sc_cosyvoice-0.2.0-py3-none-any.whl",
+            "http://pixelstonelab.com:5005/sc_cosyvoice-0.2.0-py3-none-any.whl",
             "spacy-pkuseg",
             "dragonmapper",
             "hanziconv",
@@ -35,8 +35,8 @@ requirements = {
         ],
         "linux": [
             # tts
-            "https://github.com/MomoiaMoia/Minimum-CosyVoice/releases/download/0.2.0/ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl",
-            "https://github.com/MomoiaMoia/Minimum-CosyVoice/releases/download/0.2.0/ttsfrd_dependency-0.1-py3-none-any.whl",
+            "http://pixelstonelab.com:5005/ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl",
+            "http://pixelstonelab.com:5005/ttsfrd_dependency-0.1-py3-none-any.whl",
         ],
         "windows": [],
     },

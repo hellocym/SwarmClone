@@ -63,9 +63,9 @@ def log_info(info, level):
             print("[Notice]\t" + info)
 
 
-def install_conda_packages(packages, channel):
+def install_conda_packages(packages, channel, conda_path=None):
     # 调用 conda install
-    install_cmd = ["conda", "install", "-c", channel] + packages + ["-y"]
+    install_cmd = ["conda" if not conda_path else conda_path, "install", "-c", channel] + packages + ["-y"]
     subprocess.run(install_cmd)
 
 
@@ -74,6 +74,9 @@ def install_pip_packages(packages):
     install_cmd = ["python", "-m", "pip", "install"] + packages
     subprocess.run(install_cmd)
 
+
+os_system = sys.platform
+conda_path = None
 
 print(
     """                                            
@@ -92,21 +95,34 @@ print(
 )
 
 try:
-    subprocess.run(["conda", "--version"], check=True, stdout=subprocess.DEVNULL)
+    try:        
+        subprocess.run(["conda", "--version"], check=True, stdout=subprocess.DEVNULL)
+    except:
+        log_info("您的 conda 可能未配置到 PATH 中，正在寻找可执行 conda...", "notice")
+        conda_path = os.popen("echo $CONDA_EXE").read().strip()
+        if conda_path == "":
+            log_info("未找到可执行的 conda 命令，您可以手动尝试运行 \
+                \n conda --version \n \
+                来检查您是否添加了 conda 到 PATH 中。", "error")
+            
     if os.environ.get("CONDA_DEFAULT_ENV") == "base":
         log_info("您正在向 base 环境中安装依赖，是否继续 [y/n]: ", "notice")
         check = input()
         if check.strip() == "y":
             pass
         else:
-            log_info("取消安装", "error")
+            log_info("取消安装。", "error")
 except:
-    log_info("未找到 conda。", "error")
+    log_info("未找到可执行的 conda 命令，您可以手动尝试运行 \
+                    \n conda --version \n \
+                    来检查您是否添加了 conda 到 PATH 中。", "error")
 
 try:
-    import torch
+    import torch    # type: ignore
 except:
-    log_info("未找到 torch。", "error")
+    log_info("未找到 torch，您可以通过 \
+             \n https://pytorch.org/get-started/locally/ \n \
+             下载 torch。", "error")
 
 print(
     """
@@ -121,23 +137,22 @@ print(
 install = input()
 
 if install.strip().lower() == "y":
-    os_system = sys.platform
     if os_system.startswith("linux"):
         log_info("安装 Linux 平台依赖中: ", "notice")
         if len(requirements["pip"]["linux"]) > 0:
             install_pip_packages(requirements["pip"]["linux"])
         if len(requirements["conda"]["linux"]) > 0:
-            install_conda_packages(requirements["conda"]["linux"], "conda-forge")
+            install_conda_packages(requirements["conda"]["linux"], "conda-forge", conda_path)
     else:
         log_info("安装 Windows 平台依赖中: ", "notice")
         if len(requirements["pip"]["windows"]) > 0:
             install_pip_packages(requirements["pip"]["windows"])
         if len(requirements["conda"]["windows"]) > 0:
-            install_conda_packages(requirements["conda"]["windows"], "conda-forge")
+            install_conda_packages(requirements["conda"]["windows"], "conda-forge", conda_path)
 
     log_info("安装通用依赖中: ", "notice")
     install_pip_packages(requirements["pip"]["general"])
-    install_conda_packages(requirements["conda"]["general"], "conda-forge")
-    log_info("安装完毕！", "notice")
+    install_conda_packages(requirements["conda"]["general"], "conda-forge", conda_path)
+    log_info("安装完毕！如果在运行时发生缺少包，请重复运行该脚本。", "notice")
 else:
     log_info("取消添加。", "error")

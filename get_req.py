@@ -88,7 +88,6 @@ print(
 [get_req.py]    开始安装 SwarmClone AI 1.0 相关依赖。
 
 [Prerequisite]  已安装 Conda 并配置 PATH。
-                已安装 PyTorch == 2.5.1。
     
 [get_req.py]    开始检查先决条件。
 """
@@ -107,8 +106,8 @@ try:
             
     if os.environ.get("CONDA_DEFAULT_ENV") == "base":
         log_info("您正在向 base 环境中安装依赖，是否继续 [y/n]: ", "notice")
-        check = input()
-        if check.strip() == "y":
+        conda_base_check = input()
+        if conda_base_check.strip() == "y":
             pass
         else:
             log_info("取消安装。", "error")
@@ -117,12 +116,14 @@ except:
                     \n conda --version \n \
                     来检查您是否添加了 conda 到 PATH 中。", "error")
 
-try:
-    import torch    # type: ignore
-except:
-    log_info("未找到 torch，您可以通过 \
-             \n https://pytorch.org/get-started/locally/ \n \
-             下载 torch。", "error")
+
+if not (3, 9) < sys.version_info < (3, 11):
+    log_info("我们推荐使用 Python~=3.10。但如果您当前的系统是 Windows， \
+        您可以输入 y 以继续使用当前版本，输入 n 取消安装。[y/n]", "notice")
+    python_version_check = input()
+    if python_version_check.strip().lower() != "y":
+        log_info("取消安装。", "error")
+
 
 print(
     """
@@ -134,15 +135,20 @@ print(
 [Noitce]        现在开始安装吗？[y/n] """
 , end="")
 
-install = input()
 
+install = input()
 if install.strip().lower() == "y":
+    
+    log_info("安装 PyTorch 中: ", "notice")
+    subprocess.run(["pip3", "install", "torch", "torchaudio", "--index-url https://download.pytorch.org/whl/cu126"])
+    
     if os_system.startswith("linux"):
         log_info("安装 Linux 平台依赖中: ", "notice")
         if len(requirements["pip"]["linux"]) > 0:
             install_pip_packages(requirements["pip"]["linux"])
         if len(requirements["conda"]["linux"]) > 0:
             install_conda_packages(requirements["conda"]["linux"], "conda-forge", conda_path)
+            
     else:
         log_info("安装 Windows 平台依赖中: ", "notice")
         if len(requirements["pip"]["windows"]) > 0:
@@ -153,6 +159,7 @@ if install.strip().lower() == "y":
     log_info("安装通用依赖中: ", "notice")
     install_pip_packages(requirements["pip"]["general"])
     install_conda_packages(requirements["conda"]["general"], "conda-forge", conda_path)
+    
     log_info("安装完毕！如果在运行时发生缺少包，请重复运行该脚本。", "notice")
 else:
-    log_info("取消添加。", "error")
+    log_info("取消安装。", "error")

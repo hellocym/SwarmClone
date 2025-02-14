@@ -140,7 +140,7 @@ install = input()
 if install.strip().lower() == "y":
     
     log_info("安装 PyTorch 中: ", "notice")
-    subprocess.run(["pip3", "install", "torch", "torchaudio", "--index-url https://download.pytorch.org/whl/cu126"])
+    subprocess.run(["pip3", "install", "torch", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu126"])
     
     if os_system.startswith("linux"):
         log_info("安装 Linux 平台依赖中: ", "notice")

@@ -148,10 +148,10 @@ class GlobalConfig:
     
     # 模块启动命令
     START_ASR_COMMAND: List[str] = field(
-        default_factory=lambda: ["python", "-m", "swarmclone.asr"]
+        default_factory=lambda: ["python", "-m", "swarmclone.asr_dummy"]
     )
     START_TTS_COMMAND: List[str] = field(
-        default_factory=lambda: ["python", "-m", "swarmclone.tts"]
+        default_factory=lambda: ["python", "-m", "swarmclone.tts_dummy"]
     )
     START_LLM_COMMAND: List[str] = field(
         default_factory=lambda: ["python", "-m", "swarmclone.model_qwen"]
@@ -160,7 +160,7 @@ class GlobalConfig:
         default_factory=lambda: ["python", "-m", "swarmclone.frontend_dummy"]
     )
     START_PANEL_COMMAND: List[str] = field(
-        default_factory=lambda: ["python", "-m", "swarmclone.panel_dummy"]
+        default_factory=lambda: ["python", "-m", "swarmclone.panel"]
     )
 
     # 运行时属性

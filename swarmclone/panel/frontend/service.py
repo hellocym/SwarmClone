@@ -46,8 +46,8 @@ class FrontendService:
                 config.START_ASR_COMMAND,
                 config.START_TTS_COMMAND,
                 config.START_LLM_COMMAND,
-                config.START_FRONTEND_COMMAND,
-                config.START_PANEL_COMMAND,
+                config.START_FRONTEND_COMMAND
+                # 此处不应包含Panel的启动命令，因为显然Panel已经启动
             ]
 
             create_procs = []
@@ -73,6 +73,7 @@ class FrontendService:
                     log.error(f"启动命令 {cmd} 失败: {result}")
                     continue
                 proc = result
+                assert isinstance(proc, asyncio.subprocess.Process) # 让mypy不抱怨类型不对
                 log.debug(f"模块启动成功: {' '.join(cmd)} (PID: {proc.pid})")
                 # 捕获输出到日志
                 asyncio.create_task(read_stream(proc.stdout, log.debug))

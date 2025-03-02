@@ -32,6 +32,8 @@ requirements = {
             "loguru",
             # config
             "tomli",
+            # MiniLM2
+            "modelscope"
         ],
         "linux": [
             # tts

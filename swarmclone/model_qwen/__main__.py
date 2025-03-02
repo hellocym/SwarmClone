@@ -7,9 +7,15 @@ import re
 import uuid
 import time
 from enum import Enum
-from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer, StoppingCriteriaList, StoppingCriteria # type: ignore
+from transformers import ( # type: ignore
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TextIteratorStreamer,
+    StoppingCriteriaList,
+    StoppingCriteria
+)
 
-from . import qwen2_config
+from . import qwen2_config, tokenizer, model
 from ..request_parser import *
 from ..config import config
 
@@ -97,26 +103,6 @@ stop_generation = threading.Event()
 stop_module = threading.Event()
 
 if __name__ == '__main__':
-    successful = False
-    abs_model_path = os.path.expanduser(qwen2_config.MODEL_PATH)
-    while not successful:
-        try:
-            print(f"正在从{abs_model_path}加载模型……")
-            model = AutoModelForCausalLM.from_pretrained(abs_model_path, torch_dtype="auto", device_map="auto")
-            tokenizer = AutoTokenizer.from_pretrained(abs_model_path, padding_side="left")
-            successful = True
-        except Exception as e:
-            print(e)
-            choice = input("加载模型失败，是否下载模型？(Y/n)")
-            if choice.lower() != "n":
-                import huggingface_hub # type: ignore
-                huggingface_hub.snapshot_download(
-                    repo_id=qwen2_config.MODEL_ID,
-                    repo_type="model",
-                    local_dir=abs_model_path,
-                    endpoint="https://hf-mirror.com"
-                )
-    
     streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((config.panel.server.host, config.llm.port))
@@ -157,7 +143,8 @@ if __name__ == '__main__':
             等待ASR状态：
             - 若收到ASR给出的语音识别信息，切换到生成状态
             """
-            print(message)
+            if message is not None:
+                print(message)
             if message_consumed:
                 try:
                     message = q_recv.get(False)
@@ -209,7 +196,7 @@ if __name__ == '__main__':
                             })
                         full_text += text
                         # 将这轮的生成文本加入历史记录
-                        history.append({'role': 'llm', 'content': full_text})
+                        history.append({'role': 'assistant', 'content': full_text})
                         # 发出信号并等待TTS
                         q_send.put(LLM_EOS)
                         state = States.WAIT_FOR_TTS
@@ -223,7 +210,7 @@ if __name__ == '__main__':
                             generation_thread.join()
                         for _ in streamer:... # 跳过剩余的文本
                         # 将这轮的生成文本加入历史记录
-                        history.append({'role': 'llm', 'content': full_text})
+                        history.append({'role': 'assistant', 'content': full_text})
                         # 发出信号并等待ASR
                         q_send.put(LLM_EOS)
                         state = States.WAIT_FOR_ASR

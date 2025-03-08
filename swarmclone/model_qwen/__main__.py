@@ -15,7 +15,7 @@ from transformers import ( # type: ignore
     StoppingCriteria
 )
 
-from . import qwen2_config, tokenizer, model
+from . import tokenizer, model
 from ..request_parser import *
 from ..config import config
 

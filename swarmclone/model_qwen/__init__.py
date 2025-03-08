@@ -1,14 +1,12 @@
-from .config_qwen2 import Qwen2Config
+from ..config import config
 import os
 from transformers import ( # type: ignore
     AutoModelForCausalLM,
     AutoTokenizer
 )
 
-qwen2_config = Qwen2Config()
-
 successful = False
-abs_model_path = os.path.expanduser(qwen2_config.MODEL_PATH)
+abs_model_path = os.path.expanduser(config.llm.qwen2.model_path)
 while not successful:
     try:
         print(f"正在从{abs_model_path}加载模型……")
@@ -21,7 +19,7 @@ while not successful:
         if choice.lower() != "n":
             import huggingface_hub # type: ignore
             huggingface_hub.snapshot_download(
-                repo_id=qwen2_config.MODEL_ID,
+                repo_id=config.llm.qwen2.model_id,
                 repo_type="model",
                 local_dir=abs_model_path,
                 endpoint="https://hf-mirror.com"

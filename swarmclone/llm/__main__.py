@@ -16,7 +16,7 @@ from transformers import ( # type: ignore
     StopStringCriteria
 )
 
-from . import minilm2_config, tokenizer, model
+from . import tokenizer, model
 from ..request_parser import *
 from ..config import config
 
@@ -183,7 +183,7 @@ if __name__ == '__main__':
                                 'from': 'llm',
                                 'type': 'data',
                                 'payload': {
-                                    'content': text,
+                                    'content': text.strip(),
                                     'id': str(uuid.uuid4()),
                                     'emotion': {
                                         'like': 0,
@@ -227,7 +227,7 @@ if __name__ == '__main__':
                                 'from': 'llm',
                                 'type': 'data',
                                 'payload': {
-                                    'content': sentence,
+                                    'content': sentence.strip(),
                                     'id': str(uuid.uuid4()),
                                     'emotion': {
                                         'like': 0,

@@ -1,4 +1,3 @@
-from .config_llm import MiniLM2Config
 from ..config import config
 import os
 from transformers import ( # type: ignore
@@ -6,10 +5,8 @@ from transformers import ( # type: ignore
     AutoTokenizer
 )
 
-minilm2_config = MiniLM2Config()
-
 successful = False
-abs_model_path = os.path.expanduser(minilm2_config.MODEL_PATH)
+abs_model_path = os.path.expanduser(config.llm.minilm2.model_path)
 while not successful:
     try:
         print(f"正在从{abs_model_path}加载模型……")
@@ -30,7 +27,7 @@ while not successful:
         if choice.lower() != "n":
             from modelscope.hub.snapshot_download import snapshot_download # type: ignore
             snapshot_download(
-                repo_id=minilm2_config.MODEL_ID,
+                repo_id=config.llm.minilm2.model_id,
                 repo_type="model",
                 local_dir=abs_model_path
             )

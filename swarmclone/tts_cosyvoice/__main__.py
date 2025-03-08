@@ -13,7 +13,16 @@ from typing import List
 import torchaudio   # type: ignore
 import pygame
 
-from . import tts_config
+from . import ( # type: ignore
+    cosyvoice_ins,
+    cosyvoice_sft,
+    is_linux,
+    temp_dir,
+    zh_acoustic,
+    zh_lexicon, 
+    zh_tokenizer,
+    zh_aligner
+)
 from .funcs import is_panel_ready, tts_generate
 from ..request_parser import *
 from ..config import config
@@ -123,52 +132,6 @@ def play_sound(sock: socket.socket):
 
 
 if __name__ == "__main__":
-    # 忽略警告
-    warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*")
-    warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm.*")
-    warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_only=False.*")
-    warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_norm.*")
-
-    # TTS MODEL 初始化
-    temp_dir = tempfile.gettempdir()
-    try:
-        model_path = os.path.expanduser(tts_config.MODELPATH)
-        is_linux = sys.platform.startswith("linux")
-        if is_linux:
-            print(f" * 将使用 {tts_config.INS_MODEL} & {tts_config.SFT_MODEL} 进行生成。")
-            cosyvoice_sft = CosyVoice(os.path.join(model_path, tts_config.SFT_MODEL), fp16=tts_config.FLOAT16)
-            cosyvoice_ins = CosyVoice(os.path.join(model_path, tts_config.INS_MODEL), fp16=tts_config.FLOAT16)
-        else:
-            print(f" * 将使用 {tts_config.INS_MODEL} 进行生成。")
-            cosyvoice_ins = CosyVoice(os.path.join(model_path, tts_config.INS_MODEL), fp16=tts_config.FLOAT16)
-    except Exception as e:
-        err_msg = str(e).lower()
-        if ("file" in err_msg) and ("doesn't" in err_msg) and ("exist" in err_msg):
-            catch = input(" * CosyVoice TTS 发生了错误，这可能是由于模型下载不完全导致的，是否清理缓存TTS模型？[y/n] ")
-            if catch.strip().lower() == "y":
-                shutil.rmtree(os.path.expanduser(tts_config.MODELPATH), ignore_errors=True)
-                print(" * 清理完成，请重新运行该模块。")
-                sys.exit(0)
-            else:
-                raise
-        else:
-            raise
-    
-    # MFA MODEL 初始化
-    mfa_dir = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa"))
-    if not (
-        os.path.exists(mfa_dir) and
-        os.path.exists(os.path.join(mfa_dir, "mandarin_china_mfa.dict")) and
-        os.path.exists(os.path.join(mfa_dir, "mandarin_mfa.zip"))
-        # os.path.exists(os.path.join(mfa_dir, "english_mfa.zip")) and
-        # os.path.exists(os.path.join(mfa_dir, "english_mfa.dict"))
-        ):
-        print(" * SwarmClone 使用 Montreal Forced Aligner 进行对齐，开始下载: ")
-        download_model_and_dict(tts_config)
-    zh_acoustic, zh_lexicon, zh_tokenizer, zh_aligner = init_mfa_models(tts_config, lang="zh-CN")
-    # TODO: 英文还需要检查其他一些依赖问题
-    # en_acoustic, en_lexicon, en_tokenizer, en_aligner = init_mfa_models(tts_config, lang="en-US")
-    
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((config.panel.server.host, config.tts.port))
         print(" * CosyVoice 初始化完成，等待面板准备就绪。")
@@ -195,7 +158,7 @@ if __name__ == "__main__":
                     output = tts_generate(tts=[cosyvoice_ins] if not is_linux
                                             else [cosyvoice_sft, cosyvoice_ins],
                                             s=s.strip(),              # type: ignore
-                                            tune=tts_config.TUNE,
+                                            tune=config.tts.cosyvoice.tune,
                                             emotions=emotions,        # type: ignore
                                             is_linux=is_linux)
                 except:
@@ -211,7 +174,7 @@ if __name__ == "__main__":
                 torchaudio.save(audio_name, output, 22050)
                 # 字幕文件
                 txt_name = audio_name.replace(".wav", ".txt")
-                open(txt_name, "w", encoding="utf-8").write(s)
+                open(txt_name, "w", encoding="utf-8").write(str(s))
                 # 对齐文件
                 # if s.isascii():
                 #     align(audio_name, txt_name, en_acoustic, en_lexicon, en_tokenizer, en_aligner)
@@ -219,10 +182,10 @@ if __name__ == "__main__":
                 align_name = audio_name.replace(".wav", ".TextGrid")
                 try:
                     align(audio_name, txt_name, zh_acoustic, zh_lexicon, zh_tokenizer, zh_aligner)
-                    q_fname.put([sentence_id, audio_name, txt_name, align_name])
+                    q_fname.put([str(sentence_id), audio_name, txt_name, align_name])
                 except:
                     print(f" * MFA 在处理 '{s}' 产生了对齐错误。")
-                    q_fname.put([sentence_id, audio_name, txt_name, "err"])
+                    q_fname.put([str(sentence_id), audio_name, txt_name, "err"])
                     continue
         sock.close()
         q_fname.put([None])

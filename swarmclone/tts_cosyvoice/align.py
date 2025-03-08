@@ -7,7 +7,6 @@ from pathlib import Path
 import pywrapfst
 import textgrid   # type: ignore
 
-from . import tts_config
 from zhconv import convert   # type: ignore
 from tqdm import tqdm   # type: ignore
 from kalpy.utterance import  Segment   # type: ignore
@@ -42,7 +41,7 @@ def download_file(url, dest_path):
 
 
 def download_model_and_dict(tts_config):
-    mfa_model_path = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa"))
+    mfa_model_path = os.path.expanduser(os.path.join(tts_config.model_path, "mfa"))
     os.makedirs(mfa_model_path, exist_ok=True)
     files = [["https://github.com/MontrealCorpusTools/mfa-models/releases/download/acoustic-mandarin_mfa-v3.0.0/mandarin_mfa.zip", 
               os.path.join(mfa_model_path, "mandarin_mfa.zip")], 
@@ -61,8 +60,8 @@ def init_mfa_models(tts_config, lang="zh-CN"):
     lang_zh_cn = ["mandarin_china_mfa.dict", "mandarin_mfa.zip"]
     lang_en_us = ["english_mfa.dict", "english_mfa.zip"]
     using_lang = lang_zh_cn if lang == "zh-CN" else lang_en_us
-    mfa_dict_path       = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa", using_lang[0]))
-    mfa_model_path      = os.path.expanduser(os.path.join(tts_config.MODELPATH, "mfa", using_lang[1]))
+    mfa_dict_path       = os.path.expanduser(os.path.join(tts_config.model_path, "mfa", using_lang[0]))
+    mfa_model_path      = os.path.expanduser(os.path.join(tts_config.model_path, "mfa", using_lang[1]))
     dictionary_path     = Path(mfa_dict_path)
     acoustic_model_path = Path(mfa_model_path)
 

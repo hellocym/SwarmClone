@@ -255,7 +255,7 @@ if __name__ == '__main__':
                     state = States.WAIT_FOR_ASR
                     message_consumed = True
 
-            elif message is not None and message == PANEL_STOP:
+            if message is not None and message == PANEL_STOP:
                 stop_generation.set()
                 stop_module.set()
                 break

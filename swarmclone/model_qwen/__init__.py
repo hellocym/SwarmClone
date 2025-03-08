@@ -10,7 +10,7 @@ abs_model_path = os.path.expanduser(config.llm.qwen2.model_path)
 while not successful:
     try:
         print(f"正在从{abs_model_path}加载模型……")
-        model = AutoModelForCausalLM.from_pretrained(abs_model_path, torch_dtype="auto", device_map="auto")
+        model = AutoModelForCausalLM.from_pretrained(abs_model_path, torch_dtype="auto").to(config.llm.device)
         tokenizer = AutoTokenizer.from_pretrained(abs_model_path, padding_side="left")
         successful = True
     except Exception as e:

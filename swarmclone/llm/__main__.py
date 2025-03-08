@@ -56,6 +56,26 @@ def split_text(s, separators="。？！～.?!~\n\r"): # By DeepSeek
     
     return result
 
+def build_msg(
+        content: str,
+        emotion: EmotionType = {
+            'like': 0,
+            'disgust': 0,
+            'anger': 0,
+            'happy': 0,
+            'sad': 0,
+            'neutral': 1.0 # 无感情占位符
+        }):
+    return {
+        'from': 'llm',
+        'type': 'data',
+        'payload': {
+            'content': content,
+            'id': str(uuid.uuid4()),
+            'emotion': emotion
+        }
+    }
+
 q_recv: queue.Queue[RequestType] = queue.Queue()
 def recv_msg(sock: socket.socket, q: queue.Queue[RequestType], stop_module: threading.Event):
     loader = Loader(config)
@@ -178,26 +198,11 @@ if __name__ == '__main__':
                         if generation_thread is not None and generation_thread.is_alive():
                             generation_thread.join()
                         # 处理剩余的文本
-                        if text.strip():
-                            q_send.put({
-                                'from': 'llm',
-                                'type': 'data',
-                                'payload': {
-                                    'content': text.strip(),
-                                    'id': str(uuid.uuid4()),
-                                    'emotion': {
-                                        'like': 0,
-                                        'disgust': 0,
-                                        'anger': 0,
-                                        'happy': 0,
-                                        'sad': 0,
-                                        'neutral': 1.0
-                                    } # 占位符
-                                }
-                            })
+                        if stripped_text := text.strip():
+                            q_send.put(build_msg(stripped_text))
                         full_text += text
                         # 将这轮的生成文本加入历史记录
-                        history.append({'role': 'assistant', 'content': full_text})
+                        history.append({'role': 'assistant', 'content': full_text.strip()})
                         # 发出信号并等待TTS
                         q_send.put(LLM_EOS)
                         state = States.WAIT_FOR_TTS
@@ -211,7 +216,7 @@ if __name__ == '__main__':
                             generation_thread.join()
                         for _ in streamer:... # 跳过剩余的文本
                         # 将这轮的生成文本加入历史记录
-                        history.append({'role': 'assistant', 'content': full_text})
+                        history.append({'role': 'assistant', 'content': full_text.strip()})
                         # 发出信号并等待ASR
                         q_send.put(LLM_EOS)
                         state = States.WAIT_FOR_ASR
@@ -223,22 +228,7 @@ if __name__ == '__main__':
                     if text.strip(): # 防止文本为空导致报错
                         *sentences, text = split_text(text) # 将所有完整的句子发送
                         for i, sentence in enumerate(sentences):
-                            q_send.put({
-                                'from': 'llm',
-                                'type': 'data',
-                                'payload': {
-                                    'content': sentence.strip(),
-                                    'id': str(uuid.uuid4()),
-                                    'emotion': {
-                                        'like': 0,
-                                        'disgust': 0,
-                                        'anger': 0,
-                                        'happy': 0,
-                                        'sad': 0,
-                                        'neutral': 1.0
-                                    } # 占位符
-                                }
-                            })
+                            q_send.put(build_msg(sentence))
                     continue
 
                 case States.WAIT_FOR_ASR:

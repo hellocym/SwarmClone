@@ -56,6 +56,26 @@ def split_text(s, separators="。？！～.?!~\n\r"): # By DeepSeek
     
     return result
 
+def build_msg(
+        content: str,
+        emotion: EmotionType = {
+            'like': 0,
+            'disgust': 0,
+            'anger': 0,
+            'happy': 0,
+            'sad': 0,
+            'neutral': 1.0 # 无感情占位符
+        }):
+    return {
+        'from': 'llm',
+        'type': 'data',
+        'payload': {
+            'content': content,
+            'id': str(uuid.uuid4()),
+            'emotion': emotion
+        }
+    }
+
 q_recv: queue.Queue[RequestType] = queue.Queue()
 def recv_msg(sock: socket.socket, q: queue.Queue[RequestType], stop_module: threading.Event):
     loader = Loader(config)
@@ -154,117 +174,88 @@ if __name__ == '__main__':
                         continue
                 except queue.Empty:
                     message = None
-            match state:
-                case States.STANDBY:
-                    if time.time() - standby_time > 1000000:
-                        stop_generation.clear()
-                        history.append({'role': 'user', 'content': '请随便说点什么吧！'})
-                        kwargs = {"model": model, "text_inputs": history, "streamer": streamer}
-                        generation_thread = threading.Thread(target=generate, kwargs=kwargs)
-                        generation_thread.start()
-                        state = States.GENERATE
-                        text = ""
-                    if message == ASR_ACTIVATE:
-                        state = States.WAIT_FOR_ASR
-                        message_consumed = True
 
-                case States.GENERATE:
-                    try:
-                        text += next(streamer)
-                    except StopIteration: # 生成完毕
-                        # 停止生成
-                        stop_generation.set()
-                        if generation_thread is not None and generation_thread.is_alive():
-                            generation_thread.join()
-                        # 处理剩余的文本
-                        if text.strip():
-                            q_send.put({
-                                'from': 'llm',
-                                'type': 'data',
-                                'payload': {
-                                    'content': text,
-                                    'id': str(uuid.uuid4()),
-                                    'emotion': {
-                                        'like': 0,
-                                        'disgust': 0,
-                                        'anger': 0,
-                                        'happy': 0,
-                                        'sad': 0,
-                                        'neutral': 1.0
-                                    } # 占位符
-                                }
-                            })
-                        full_text += text
-                        # 将这轮的生成文本加入历史记录
-                        history.append({'role': 'assistant', 'content': full_text})
-                        # 发出信号并等待TTS
-                        q_send.put(LLM_EOS)
-                        state = States.WAIT_FOR_TTS
-                        text = ""
-                        full_text = ""
-                        continue
-                    if message == ASR_ACTIVATE:
-                        # 停止生成
-                        stop_generation.set()
-                        if generation_thread is not None and generation_thread.is_alive():
-                            generation_thread.join()
-                        for _ in streamer:... # 跳过剩余的文本
-                        # 将这轮的生成文本加入历史记录
-                        history.append({'role': 'assistant', 'content': full_text})
-                        # 发出信号并等待ASR
-                        q_send.put(LLM_EOS)
-                        state = States.WAIT_FOR_ASR
-                        text = ""
-                        full_text = ""
-                        message_consumed = True
-                        continue
-                    print(text)
-                    if text.strip(): # 防止文本为空导致报错
-                        *sentences, text = split_text(text) # 将所有完整的句子发送
-                        for i, sentence in enumerate(sentences):
-                            q_send.put({
-                                'from': 'llm',
-                                'type': 'data',
-                                'payload': {
-                                    'content': sentence,
-                                    'id': str(uuid.uuid4()),
-                                    'emotion': {
-                                        'like': 0,
-                                        'disgust': 0,
-                                        'anger': 0,
-                                        'happy': 0,
-                                        'sad': 0,
-                                        'neutral': 1.0
-                                    } # 占位符
-                                }
-                            })
+            if state == States.STANDBY:
+                if time.time() - standby_time > 1000000:
+                    stop_generation.clear()
+                    history.append({'role': 'user', 'content': '请随便说点什么吧！'})
+                    kwargs = {"model": model, "text_inputs": history, "streamer": streamer}
+                    generation_thread = threading.Thread(target=generate, kwargs=kwargs)
+                    generation_thread.start()
+                    state = States.GENERATE
+                    text = ""
+                if message == ASR_ACTIVATE:
+                    state = States.WAIT_FOR_ASR
+                    message_consumed = True
+
+            elif state == States.GENERATE:
+                try:
+                    text += next(streamer)
+                except StopIteration: # 生成完毕
+                    # 停止生成
+                    stop_generation.set()
+                    if generation_thread is not None and generation_thread.is_alive():
+                        generation_thread.join()
+                    # 处理剩余的文本
+                    if stripped_text := text.strip():
+                        q_send.put(build_msg(stripped_text))
+                    full_text += text
+                    # 将这轮的生成文本加入历史记录
+                    history.append({'role': 'assistant', 'content': full_text.strip()})
+                    # 发出信号并等待TTS
+                    q_send.put(LLM_EOS)
+                    state = States.WAIT_FOR_TTS
+                    text = ""
+                    full_text = ""
                     continue
+                if message == ASR_ACTIVATE:
+                    # 停止生成
+                    stop_generation.set()
+                    if generation_thread is not None and generation_thread.is_alive():
+                        generation_thread.join()
+                    for _ in streamer:... # 跳过剩余的文本
+                    # 将这轮的生成文本加入历史记录
+                    history.append({'role': 'assistant', 'content': full_text.strip()})
+                    # 发出信号并等待ASR
+                    q_send.put(LLM_EOS)
+                    state = States.WAIT_FOR_ASR
+                    text = ""
+                    full_text = ""
+                    message_consumed = True
+                    continue
+                print(text)
+                if text.strip(): # 防止文本为空导致报错
+                    *sentences, text = split_text(text) # 将所有完整的句子发送
+                    for i, sentence in enumerate(sentences):
+                        q_send.put(build_msg(sentence))
+                continue
 
-                case States.WAIT_FOR_ASR:
-                    if     (message is not None and
-                            message['from'] == 'asr' and
-                            message['type'] == 'data' and
-                            isinstance(message['payload'], dict) and
-                            isinstance(message['payload']['content'], str)):
-                        message_consumed = True
-                        stop_generation.clear()
-                        history.append({'role': 'user', 'content': message['payload']['content']})
-                        kwargs = {"model": model, "text_inputs": history, "streamer": streamer}
-                        generation_thread = threading.Thread(target=generate, kwargs=kwargs)
-                        generation_thread.start()
-                        state = States.GENERATE
-                        text = ""
-                        continue
+            elif state == States.WAIT_FOR_ASR:
+                if     (message is not None and
+                        message['from'] == 'asr' and
+                        message['type'] == 'data' and
+                        isinstance(message['payload'], dict) and
+                        isinstance(message['payload']['content'], str)):
+                    message_consumed = True
+                    stop_generation.clear()
+                    history.append({'role': 'user', 'content': message['payload']['content']})
+                    kwargs = {"model": model, "text_inputs": history, "streamer": streamer}
+                    generation_thread = threading.Thread(target=generate, kwargs=kwargs)
+                    generation_thread.start()
+                    state = States.GENERATE
+                    text = ""
+                    continue
+                
+            elif state == States.WAIT_FOR_TTS:
+                if message == TTS_FINISH:
+                    state = States.STANDBY
+                    standby_time = time.time()
+                    message_consumed = True
+                if message == ASR_ACTIVATE:
+                    state = States.WAIT_FOR_ASR
+                    message_consumed = True
 
-                case States.WAIT_FOR_TTS:
-                    if message == TTS_FINISH:
-                        state = States.STANDBY
-                        standby_time = time.time()
-                        message_consumed = True
-                    if message == ASR_ACTIVATE:
-                        state = States.WAIT_FOR_ASR
-                        message_consumed = True
-            if message is not None and message == PANEL_STOP:
+            elif message is not None and message == PANEL_STOP:
                 stop_generation.set()
                 stop_module.set()
                 break

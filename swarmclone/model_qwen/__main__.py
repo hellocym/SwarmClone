@@ -230,7 +230,6 @@ if __name__ == '__main__':
                     *sentences, text = split_text(text) # 将所有完整的句子发送
                     for i, sentence in enumerate(sentences):
                         q_send.put(build_msg(sentence))
-                continue
 
             elif state == States.WAIT_FOR_ASR:
                 if     (message is not None and
@@ -248,7 +247,8 @@ if __name__ == '__main__':
                     generation_thread.start()
                     state = States.GENERATE
                     text = ""
-                    continue
+                elif message == ASR_ACTIVATE:
+                    message_consumed = True # 已经激活的不需要再激活一次
                 
             elif state == States.WAIT_FOR_TTS:
                 if message == TTS_FINISH:

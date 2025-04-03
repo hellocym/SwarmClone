@@ -43,13 +43,14 @@ if __name__ == '__main__':
 
         q_send.put(MODULE_READY) # 初始化完毕
         while True: # 等待模块开始
+            time.sleep(0.1)
             try:
                 message = q_recv.get(False)
             except queue.Empty:
                 continue
             if message == PANEL_START:
                 break
-            time.sleep(0.1)
+            ## UNREACHABLE ##
         while True:
             s = input("> ")
 

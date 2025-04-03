@@ -183,6 +183,5 @@ Qwen/
 # Coqui TTS model
 coqui/
 
-*.toml
 *.db
 Dockerfile

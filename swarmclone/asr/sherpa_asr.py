@@ -12,17 +12,17 @@ def assert_file_exists(filename: str):
     )
 
 def create_recognizer(asr_config):
-    if asr_config.MODEL == "paraformer":
-        model_path = Path(os.path.expanduser(asr_config.MODELPATH)) / "sherpa-onnx-streaming-paraformer-bilingual-zh-en"
+    if asr_config.model == "paraformer":
+        model_path = Path(os.path.expanduser(asr_config.model_path)) / "sherpa-onnx-streaming-paraformer-bilingual-zh-en"
         tokens = str(model_path / "tokens.txt")
-        if asr_config.QUANTIZED == "int8":
+        if asr_config.quantized == "int8":
             encoder = str(model_path / "encoder.int8.onnx")
             decoder = str(model_path / "decoder.int8.onnx")
-        elif asr_config.QUANTIZED == "fp32":
+        elif asr_config.quantized == "fp32":
             encoder = str(model_path / "encoder.onnx")
             decoder = str(model_path / "decoder.onnx")
         else:
-            raise ValueError(f"QUANTIZED should be 'int8' or 'fp32', but got {asr_config.QUANTIZED}")
+            raise ValueError(f"QUANTIZED should be 'int8' or 'fp32', but got {asr_config.quantized}")
 
         print(f"Loading model from {model_path}")
 
@@ -42,19 +42,19 @@ def create_recognizer(asr_config):
             rule2_min_trailing_silence=1.2,
             rule3_min_utterance_length=300,  # it essentially disables this rule
         )
-    elif asr_config.MODEL == "zipformer":
-        model_path = Path(os.path.expanduser(asr_config.MODELPATH)) / "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"
+    elif asr_config.model == "zipformer":
+        model_path = Path(os.path.expanduser(asr_config.model_path)) / "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"
         tokens = str(model_path / "tokens.txt")
-        if asr_config.QUANTIZED == "int8":
+        if asr_config.quantized == "int8":
             encoder = str(model_path / "encoder-epoch-99-avg-1.int8.onnx")
             decoder = str(model_path / "decoder-epoch-99-avg-1.int8.onnx")
             joiner = str(model_path / "joiner-epoch-99-avg-1.int8.onnx")
-        elif asr_config.QUANTIZED == "fp32":
+        elif asr_config.quantized == "fp32":
             encoder = str(model_path / "encoder-epoch-99-avg-1.onnx")
             decoder = str(model_path / "decoder-epoch-99-avg-1.onnx")
             joiner = str(model_path / "joiner-epoch-99-avg-1.onnx")
         else:
-            raise ValueError(f"QUANTIZED should be 'int8' or 'fp32', but got {asr_config.QUANTIZED}")
+            raise ValueError(f"QUANTIZED should be 'int8' or 'fp32', but got {asr_config.quantized}")
         
         print(f"Loading model from {model_path}")
 
@@ -75,15 +75,15 @@ def create_recognizer(asr_config):
             rule1_min_trailing_silence=2.4,
             rule2_min_trailing_silence=1.2,
             rule3_min_utterance_length=300,  # it essentially disables this rule
-            decoding_method=asr_config.DECODING_METHOD,
-            provider=asr_config.PROVIDER,
-            hotwords_file=asr_config.HOTWORDS_FILE,
-            hotwords_score=asr_config.HOTWORDS_SCORE,
-            blank_penalty=asr_config.BLANK_PENALTY,
+            decoding_method=asr_config.decoding_method,
+            provider=asr_config.provider,
+            hotwords_file=asr_config.hotwords_file,
+            hotwords_score=asr_config.hotwords_score,
+            blank_penalty=asr_config.blank_penalty,
         )
     else:
-        # print(f"Model {asr_config.MODEL} not supported")
-        raise NotImplementedError(f"Model {asr_config.MODEL} not supported")
+        # print(f"Model {asr_config.model} not supported")
+        raise NotImplementedError(f"Model {asr_config.model} not supported")
 
     return recognizer
 
@@ -103,26 +103,28 @@ def download_models(asr_config):
     """
     下载模型、解压模型
     """
-    if not asr_config.MODEL:
+    if not asr_config.model:
         raise ValueError("Please set MODEL in asr_config to select the model")
     
+    """ # 若模型路径未设置则会直接报错
     # 未设置模型路径时，下载到默认路径（~/.swarmclone/asr/）
-    if not asr_config.MODELPATH:
-        asr_config.MODELPATH = "~/.swarmclone/asr/"
-        print(f"MODELPATH not set, using default {asr_config.MODELPATH}")
+    if not asr_config.model_path:
+        asr_config.model_path = "~/.swarmclone/asr/"
+        print(f"MODELPATH not set, using default {asr_config.model_path}")
+    """
 
     # 使用expanduser将～转换为绝对路径
-    model_path = Path(os.path.expanduser(asr_config.MODELPATH))
+    model_path = Path(os.path.expanduser(asr_config.model_path))
     model_path.mkdir(parents=True, exist_ok=True)
 
-    if asr_config.MODEL == "paraformer":
+    if asr_config.model == "paraformer":
         model_url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-paraformer-bilingual-zh-en.tar.bz2"
         model_file = model_path / "sherpa-onnx-streaming-paraformer-bilingual-zh-en.tar.bz2"
-    elif asr_config.MODEL == "zipformer":
+    elif asr_config.model == "zipformer":
         model_url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2"
         model_file = model_path / "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2"
     else:
-        print(f"Model {asr_config.MODEL} not supported")
+        print(f"Model {asr_config.model} not supported")
         raise NotImplementedError
     
     if not model_file.is_file():

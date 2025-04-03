@@ -13,7 +13,7 @@ def assert_file_exists(filename: str):
     )
 
 def create_detector(asr_config):
-    model_path = Path(os.path.expanduser(asr_config.VADMODELPATH))
+    model_path = Path(os.path.expanduser(asr_config.vadmodel_path))
     model_file = str(model_path / "silero_vad.onnx")
     print(f"Loading model from {model_path}")
 
@@ -40,14 +40,16 @@ def vad_init(asr_config):
 def download_models(asr_config):
     """
     下载模型、解压模型
-    """    
+    """
+    """ # 若模型路径未设置则会直接报错
     # 未设置模型路径时，下载到默认路径（~/.swarmclone/vad/）
-    if not asr_config.VADMODELPATH:
-        asr_config.VADMODELPATH = "~/.swarmclone/vad/"
-        print(f"VADMODELPATH not set, using default {asr_config.VADMODELPATH}")
+    if not asr_config.vadmodel_path:
+        asr_config.vadmodel_path = "~/.swarmclone/vad/"
+        print(f"VADMODELPATH not set, using default {asr_config.vadmodel_path}")
+    """
 
     # 使用expanduser将～转换为绝对路径
-    model_path = Path(os.path.expanduser(asr_config.VADMODELPATH))
+    model_path = Path(os.path.expanduser(asr_config.vadmodel_path))
     model_path.mkdir(parents=True, exist_ok=True)
 
     
@@ -63,8 +65,7 @@ def download_models(asr_config):
 
 
 if __name__ == '__main__':
-    from .config_asr import ASRConfig
+    from . import config
     print("Testing download_models")
-    asr_config = ASRConfig()
     # test
-    download_models(asr_config)
+    download_models(config.asr.sherpa)

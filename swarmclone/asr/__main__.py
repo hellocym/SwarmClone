@@ -6,20 +6,19 @@ import sounddevice as sd # type: ignore
 from .sherpa_asr import asr_init, create_recognizer
 from .sherpa_vad import vad_init, create_detector
 
-from . import asr_config
+from . import config
 from ..request_parser import *
-from ..config import config
 
 MODULE_READY = MODULE_READY_TEMPLATE
 MODULE_READY["from"] = MODULE_READY["from"].format("asr") # type: ignore
 
 if __name__ == '__main__':
 
-    asr_init(asr_config)
-    vad_init(asr_config)
+    asr_init(config.asr.sherpa)
+    vad_init(config.asr.sherpa)
 
-    vad = create_detector(asr_config)
-    recognizer = create_recognizer(asr_config)
+    vad = create_detector(config.asr.sherpa)
+    recognizer = create_recognizer(config.asr.sherpa)
     
 
     # sherpa-onnx will do resampling inside.

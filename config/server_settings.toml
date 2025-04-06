@@ -40,7 +40,7 @@ sft_model = "CosyVoice-300M-SFT"
 ins_model = "CosyVoice-300M-Instruct"
 tune = "知络_1.2"
 model_path = "~/.swarmclone/tts_cosy_voice"
-float16 = false
+float16 = true
 
 [unity_frontend]
 port = 8006

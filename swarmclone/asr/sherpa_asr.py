@@ -138,8 +138,7 @@ def download_models(asr_config):
 
 
 if __name__ == '__main__':
-    from .config_asr import ASRConfig
+    from . import config
     print("Testing download_models")
-    asr_config = ASRConfig()
     # test
-    download_models(asr_config)
+    download_models(config.asr.sherpa)

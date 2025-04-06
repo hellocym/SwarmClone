@@ -15,7 +15,7 @@ from transformers import ( # type: ignore
     StoppingCriteria
 )
 
-from . import tokenizer, model
+from . import tokenizer, model, classifier_model, classifier_tokenizer
 from ..request_parser import *
 from ..config import config
 
@@ -56,6 +56,19 @@ def split_text(s, separators="。？！～.?!~\n\r"): # By DeepSeek
     
     return result
 
+def get_emotion(text: str) -> EmotionType:
+    ids = classifier_tokenizer([text], return_tensors="pt").input_ids.to(classifier_model.device)
+    logits = classifier_model(input_ids=ids).logits
+    neutral, like, sad, disgust, anger, happy = logits.tolist()[0]
+    return {
+        'like': like,
+        'disgust': disgust,
+        'anger': anger,
+        'happy': happy,
+        'sad': sad,
+        'neutral': neutral
+    }
+
 def build_msg(
         content: str,
         emotion: EmotionType = {
@@ -66,6 +79,7 @@ def build_msg(
             'sad': 0,
             'neutral': 1.0 # 无感情占位符
         }):
+    print(f"build_msg: {content}, {emotion}")
     return {
         'from': 'llm',
         'type': 'data',
@@ -200,7 +214,8 @@ if __name__ == '__main__':
                         generation_thread.join()
                     # 处理剩余的文本
                     if stripped_text := text.strip():
-                        q_send.put(build_msg(stripped_text))
+                        emotion = get_emotion(stripped_text)
+                        q_send.put(build_msg(stripped_text, emotion))
                     full_text += text
                     # 将这轮的生成文本加入历史记录
                     history.append({'role': 'assistant', 'content': full_text.strip()})
@@ -225,11 +240,11 @@ if __name__ == '__main__':
                     full_text = ""
                     message_consumed = True
                     continue
-                print(text)
                 if text.strip(): # 防止文本为空导致报错
                     *sentences, text = split_text(text) # 将所有完整的句子发送
                     for i, sentence in enumerate(sentences):
-                        q_send.put(build_msg(sentence))
+                        emotion = get_emotion(sentence)
+                        q_send.put(build_msg(sentence, emotion))
 
             elif state == States.WAIT_FOR_ASR:
                 if     (message is not None and

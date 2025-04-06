@@ -12,11 +12,15 @@ device = "cpu"
 
 [llm.minilm2]
 model_path = "~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-dialogue"
-model_id = "KyvYang/MiniLM2-nGPT-0.4b-dialogue"
+model_id = "KyvYang/MiniLM2-nGPT-0.4b-dialogue" # Modelscope
 
 [llm.qwen2]
 model_path = "~/.swarmclone/llm/Qwen/Qwen2.5-0.5B-Instruct"
-model_id = "Qwen/Qwen2.5-0.5B-Instruct"
+model_id = "Qwen/Qwen2.5-0.5B-Instruct" # Huggingface
+
+[llm.emotionclassification]
+model_path = "~/.swarmclone/llm/EmotionClassification/SWCBiLSTM"
+model_id = "YamadaMano/SWCBiLSTM" # Huggingface
 
 [asr]
 port = 8004

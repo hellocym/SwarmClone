@@ -155,12 +155,13 @@ if __name__ == "__main__":
                     continue
                 chunk = False
                 try:
-                    output = tts_generate(tts=[cosyvoice_ins] if not is_linux
-                                            else [cosyvoice_sft, cosyvoice_ins],
-                                            s=s.strip(),              # type: ignore
-                                            tune=config.tts.cosyvoice.tune,
-                                            emotions=emotions,        # type: ignore
-                                            is_linux=is_linux)
+                    output = tts_generate(
+                        tts=[cosyvoice_ins] if not is_linux else [cosyvoice_sft, cosyvoice_ins],
+                        s=s.strip(),              # type: ignore
+                        tune=config.tts.cosyvoice.tune,
+                        emotions=emotions,        # type: ignore
+                        is_linux=is_linux
+                    )
                 except:
                     print(f" * 生成时出错，跳过了 '{s}'。")
                     continue

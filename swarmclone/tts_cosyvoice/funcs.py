@@ -1,4 +1,5 @@
 import socket
+import torch
 
 from typing import List, Optional
 
@@ -42,17 +43,16 @@ def tts_generate(tts: List[CosyVoice], s: str, tune: str, emotions: EmotionType,
         platform (_type_):      平台
     """
     prompt = get_emotion_prompt(emotions)
-    if prompt == "neutral":
+    with torch.no_grad():
+        if prompt == "neutral":
+            if not is_linux:
+                prompt_speech_16k = load_wav(Path(__file__).parent / "asset" / "知络_1.2_ENHANCE.mp3", 16000)
+                return list(tts[0].inference_zero_shot(s.strip(), 
+                                                    "这是一段测试的语音，用来体验这个音色在speaker finetune下的表现效果，你喜欢吗？",
+                                                    prompt_speech_16k, stream=False))[0]["tts_speech"]
+            else:
+                return list(tts[0].inference_sft(s.strip(), tune, stream=False))[0]["tts_speech"]
         if not is_linux:
-            prompt_speech_16k = load_wav(Path(__file__).parent / "asset" / "知络_1.2_ENHANCE.mp3", 16000)
-            return list(tts[0].inference_zero_shot(s.strip(), 
-                                                "这是一段测试的语音，用来体验这个音色在speaker finetune下的表现效果，你喜欢吗？",
-                                                prompt_speech_16k, stream=False))[0]["tts_speech"]
+            return list(tts[0].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]
         else:
-            return list(tts[0].inference_sft(s.strip(), tune, stream=False))[0]["tts_speech"]
-    if not is_linux:
-        return list(tts[0].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]
-    else:
-        return list(tts[1].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]
-        
-
+            return list(tts[1].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]

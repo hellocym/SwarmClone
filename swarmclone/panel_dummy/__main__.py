@@ -52,7 +52,10 @@ def handle_submodule(submodule: int, sock: socket.socket) -> None:
         for req in loader.get_requests():
             if req.get("type") == "signal" and req.get("payload") == "ready":
                 break
-        time.sleep(0.1)
+        else:
+            time.sleep(0.1)
+            continue
+        break
     print(f"{SUBMODULE_NAMES[submodule]} is online.")
     try:
         while not running: # 等待启动

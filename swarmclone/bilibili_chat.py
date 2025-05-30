@@ -2,13 +2,13 @@ import asyncio
 import json
 from bilibili_api import live, sync, Credential
  
-from .config import config
+from .config import Config
 from .modules import ModuleRoles, ModuleBase
 from .messages import *
 
 class BiliBiliChat(ModuleBase):
-    def __init__(self):
-        super().__init__(ModuleRoles.CHAT, "BiliBiliChat")
+    def __init__(self, config: Config):
+        super().__init__(ModuleRoles.CHAT, "BiliBiliChat", config)
         self.credential = Credential(
             sessdata=config.chat.bilibili.credential.sessdata or None,
             bili_jct=config.chat.bilibili.credential.bili_jct or None,

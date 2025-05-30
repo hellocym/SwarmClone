@@ -3,29 +3,29 @@ import asyncio
 import queue
 from .messages import *
 from .modules import *
-from .config import config
+from .config import Config
 
 class ASRRemote(ModuleBase):
-    def __init__(self):
-        super().__init__(ModuleRoles.ASR, "ASRRemote")
+    def __init__(self, config: Config):
+        super().__init__(ModuleRoles.ASR, "ASRRemote", config)
         self.server = None
-        self.clientdict = {}
+        self.clientdict: dict[str, asyncio.StreamWriter] = {}
     
     async def run(self):
         self.server = await asyncio.start_server(
             self.handle_client,
-            config.panel.server.host,
-            config.asr.port,
+            self.config.panel.server.host,
+            self.config.asr.port,
             limit=10
         )
         async with self.server:
             await self.server.serve_forever()
     
-    async def handle_client(self, reader:asyncio.StreamReader, writer:asyncio.StreamWriter):
+    async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr = writer.get_extra_info('peername')
         print(f'ASR已连接：{addr}')
         self.clientdict[addr[1]] = writer
-        loader = Loader(config)
+        loader = Loader(self.config)
         while True:
             data = await reader.read(1024)
             loader.update(data.decode())
@@ -57,7 +57,7 @@ class ASRRemote(ModuleBase):
                         await self.results_queue.put(ASRMessage(self, user, content))
 
 class Loader: # loads的进一步封装
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.sep = config.panel.server.requests_separator
         self.request_str = ""
         self.requests: list[dict] = []

@@ -1,0 +1,66 @@
+[panel.server]
+host = "127.0.0.1"
+port = 8001
+requests_separator = "%SEP%"
+
+[panel.frontend]
+port = 8002
+
+[llm]
+port = 8003
+device = "cuda"
+idle_time = 30
+
+[llm.minilm2]
+model_path = "~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-dialogue"
+model_id = "KyvYang/MiniLM2-nGPT-0.4b-dialogue" # Modelscope
+
+[llm.qwen2]
+model_path = "~/.swarmclone/llm/Qwen/Qwen2.5-0.5B-Instruct"
+model_id = "Qwen/Qwen2.5-0.5B-Instruct" # Huggingface
+
+[llm.emotionclassification]
+model_path = "~/.swarmclone/llm/EmotionClassification/SWCBiLSTM"
+model_id = "YamadaMano/SWCBiLSTM" # Huggingface
+
+[asr]
+port = 8004
+
+[asr.sherpa]
+model = "zipformer"
+quantized = "fp32"
+model_path = "~/.swarmclone/asr/"
+decoding_method = "greedy_search"
+provider = "cpu"
+hotwords_file = ""
+hotwords_score = 1.5
+blank_penalty = 0.0
+vadmodel_path = "~/.swarmclone/vad/"
+
+[tts]
+port = 8005
+
+[tts.cosyvoice]
+sft_model = "CosyVoice-300M-SFT"
+ins_model = "CosyVoice-300M-Instruct"
+tune = "知络_1.2"
+model_path = "~/.swarmclone/tts_cosy_voice"
+float16 = true
+
+[unity_frontend]
+port = 8006
+
+[chat]
+port = 8007
+
+[chat.bilibili]
+live_room_id = 622909
+
+[chat.bilibili.credential]
+sessdata=""
+bili_jct=""
+buvid3=""
+dedeuserid=""
+ac_time_value=""
+#credential参数的获取请参考 https://nemo2011.github.io/bilibili-api/#/get-credential
+#获取完整弹幕信息仅需要sessdata

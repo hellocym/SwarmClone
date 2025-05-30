@@ -47,7 +47,7 @@ class ASRActivated(Message):
 
 class ASRMessage(Message):
     """
-    语音识别得到的信息
+    语音识别信息
     .speaker_name: 说话人
     .message: 语音识别得到的信息
     """
@@ -103,7 +103,7 @@ class AudioFinished(Message):
  
 class TTSAlignedAudio(Message):
     """
-    TTS 对齐信息
+    TTS 音频
     .id：消息的 id（uuid）
     .audio_data：bytes 音频数据
     .align_data：对齐数据

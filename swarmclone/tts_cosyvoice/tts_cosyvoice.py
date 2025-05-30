@@ -12,7 +12,7 @@ from time import time
 import torch
 import torchaudio # type: ignore
 
-from ..config import config
+from ..config import Config
 from ..modules import ModuleRoles, ModuleBase
 from ..messages import *
 
@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_on
 warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_norm.*")
 
 is_linux = sys.platform.startswith("linux")
-def init_tts():
+def init_tts(config: Config):
     # TTS Model 初始化
     try:
         model_path = os.path.expanduser(config.tts.cosyvoice.model_path)
@@ -71,13 +71,13 @@ def init_tts():
 
 
 class TTSCosyvoice(ModuleBase):
-    def __init__(self):
-        super().__init__(ModuleRoles.TTS, "TTSCosyvoice")
-        init = init_tts()
+    def __init__(self, config: Config):
+        super().__init__(ModuleRoles.TTS, "TTSCosyvoice", config)
+        init = init_tts(config)
         self.cosyvoice_sft, self.cosyvoice_ins = init["tts"]
         self.zh_acoustic, self.zh_lexicon, self.zh_tokenizer, self.zh_aligner = init["mfa"]
         del init
-        self.processed_queue = asyncio.Queue(maxsize=128)
+        self.processed_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
 
     async def run(self):
         loop = asyncio.get_running_loop()
@@ -106,7 +106,7 @@ class TTSCosyvoice(ModuleBase):
                 tts_generate,
                 tts=[self.cosyvoice_ins] if not is_linux else [self.cosyvoice_sft, self.cosyvoice_ins],
                 s=content.strip(),
-                tune=config.tts.cosyvoice.tune,
+                tune=self.config.tts.cosyvoice.tune,
                 emotions=emotions,
                 is_linux=is_linux
             )

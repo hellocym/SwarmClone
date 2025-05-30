@@ -11,7 +11,7 @@ from transformers import ( # type: ignore
     StoppingCriteriaList,
     StopStringCriteria
 )
-from .config import config
+from .config import Config
 from .modules import *
 from .messages import *
 
@@ -37,8 +37,8 @@ def split_text(s, separators="。？！～.?!~\n\r") -> list[str]: # By DeepSeek
     return result
 
 class LLMMiniLM2(LLMBase):
-    def __init__(self):
-        super().__init__("LLMMiniLM2")
+    def __init__(self, config: Config):
+        super().__init__("LLMMiniLM2", config)
 
         successful = False
         abs_model_path = os.path.expanduser(config.llm.minilm2.model_path)

@@ -7,14 +7,15 @@ from enum import Enum
 from uuid import uuid4
 from .constants import *
 from .messages import *
-from .config import config
+from .config import Config
 
 class ModuleBase:
-    def __init__(self, module_role: ModuleRoles, name: str):
+    def __init__(self, module_role: ModuleRoles, name: str, config: Config):
         self.name = name
         self.role = module_role
         self.task_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.results_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
+        self.config = config
     
     async def run(self):
         while True:
@@ -37,22 +38,9 @@ class ModuleBase:
         也可以选择手动往results_queue中put结果然后返回None
         """
 
-class ASRDummy(ModuleBase):
-    def __init__(self):
-        super().__init__(ModuleRoles.ASR, "ASRDummy")
-        self.timer = time.perf_counter()
-
-    async def process_task(self, task: Message | None) -> Message | None:
-        call_time = time.perf_counter()
-        if call_time - self.timer > 5:
-            self.timer = call_time
-            await self.results_queue.put(ASRActivated(self))
-            await self.results_queue.put(ASRMessage(self, f"{self}", "Hello, world!"))
-        return None
-
 class LLMBase(ModuleBase):
-    def __init__(self, name: str):
-        super().__init__(ModuleRoles.LLM, name)
+    def __init__(self, name: str, config: Config):
+        super().__init__(ModuleRoles.LLM, name, config)
         self.timer = time.perf_counter()
         self.state = LLMState.IDLE
         self.history: list[dict[str, str]] = []
@@ -120,7 +108,7 @@ class LLMBase(ModuleBase):
                             self._switch_to_generating({'role': 'chat', 'content': f'{chat["user"]}：{chat["content"]}'})
                         except asyncio.QueueEmpty:
                             pass
-                    elif time.perf_counter() - self.timer > config.llm.idle_time:
+                    elif time.perf_counter() - self.timer > self.config.llm.idle_time:
                         self._switch_to_generating({'role': 'system', 'content': '请随便说点什么吧！'})
                 case LLMState.GENERATING:
                     if isinstance(task, ASRActivated):
@@ -180,8 +168,8 @@ class LLMBase(ModuleBase):
         yield "", {"like": 0, "disgust": 0, "anger": 0, "happy": 0, "sad": 0, "neutral": 1.}
 
 class LLMDummy(LLMBase):
-    def __init__(self):
-        super().__init__("LLMDummy")
+    def __init__(self, config: Config):
+        super().__init__("LLMDummy", config)
 
     async def iter_sentences_emotions(self):
         sentences = ["This is a test sentence.", f"I received user prompt {self.history[-1]['content']}"]
@@ -189,8 +177,8 @@ class LLMDummy(LLMBase):
             yield sentence, {'like': 0, 'disgust': 0, 'anger': 0, 'happy': 0, 'sad': 0, 'neutral': 1.}
 
 class FrontendDummy(ModuleBase):
-    def __init__(self):
-        super().__init__(ModuleRoles.FRONTEND, "FrontendDummy")
+    def __init__(self, config: Config):
+        super().__init__(ModuleRoles.FRONTEND, "FrontendDummy", config)
 
     async def process_task(self, task: Message | None) -> Message | None:
         if task is not None:
@@ -199,6 +187,6 @@ class FrontendDummy(ModuleBase):
 
 class ControllerDummy(ModuleBase):
     """给Controller直接发送消息用的马甲，没有实际功能"""
-    def __init__(self):
-        super().__init__(ModuleRoles.CONTROLLER, "ControllerDummy")
+    def __init__(self, config: Config):
+        super().__init__(ModuleRoles.CONTROLLER, "ControllerDummy", config)
     

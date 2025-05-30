@@ -1,20 +1,21 @@
 """
 主控——主控端的核心
 """
-import uvicorn
 import asyncio
 
+import uvicorn
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, HTMLResponse
 
 from .modules import *
 from .constants import *
+from .config import Config
 
 from . import __version__
 
 class Controller:
-    def __init__(self):
+    def __init__(self, config: Config | None = None):
         self.modules: dict[ModuleRoles, list[ModuleBase]] = {
             ModuleRoles.ASR: [],
             ModuleRoles.CHAT: [],
@@ -25,8 +26,22 @@ class Controller:
         }
         self.app = FastAPI(title="Zhiluo Controller")
         self.register_routes()
+        self.load(config or Config())
     
-    def register(self, module: ModuleBase):
+    def load(self, config: Config):
+        self.config = config
+        for (_, modules) in self.modules.items():
+            for module in modules:
+                module.config = config
+
+    def register_module(self, module_class: type[ModuleBase], **kwargs):
+        """
+        注册模块
+        module_class: 模块类
+        **kwargs: 模块类的构造函数参数，不需要config参数，其会由Controller自动传递
+        """
+        assert self.config is not None, "请先加载配置"
+        module = module_class(**kwargs, config=self.config)
         assert module.role in self.modules, "不明的模块类型"
         match module.role:
             case ModuleRoles.LLM:
@@ -67,9 +82,9 @@ class Controller:
             module = data.get("module")
             
             if module == ModuleRoles.ASR.value:
-                await self.handle_message(ASRActivated(ControllerDummy()))
+                await self.handle_message(ASRActivated(ControllerDummy(self.config)))
                 message = ASRMessage(
-                    source=ControllerDummy(),
+                    source=ControllerDummy(self.config),
                     speaker_name=data.get("speaker_name"),
                     message=data.get("content")
                 )
@@ -98,13 +113,13 @@ class Controller:
             if len(modules) > 0:
                 print(f"{module_role.value}模块已启动")
                 
-        config = uvicorn.Config(
+        uvcorn_config = uvicorn.Config(
             self.app,
             host="0.0.0.0",
             port=8000,
             loop="asyncio"
         )
-        server = uvicorn.Server(config)
+        server = uvicorn.Server(uvcorn_config)
         try:
             loop.run_until_complete(server.serve())
         except KeyboardInterrupt:

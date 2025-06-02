@@ -110,11 +110,12 @@ class TTSCosyvoice(ModuleBase):
                 emotions=emotions,
                 is_linux=is_linux
             )
+            generate_succedded = True
         except Exception as e:
             output = torch.zeros((1, 22050))
             print(f" * 错误: {e}")
             print(f" * 生成时出错，跳过了 '{content}'。")
-            return None
+            generate_succedded = False
             
         # 音频文件
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -126,6 +127,7 @@ class TTSCosyvoice(ModuleBase):
             open(txt_name, "w", encoding="utf-8").write(str(content))
 
             try:
+                if not generate_succedded: raise Exception("生成没有成功，跳过对齐")
                 await asyncio.to_thread(
                     align, 
                     audio_name, 

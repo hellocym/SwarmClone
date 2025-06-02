@@ -111,6 +111,7 @@ class TTSCosyvoice(ModuleBase):
                 is_linux=is_linux
             )
         except Exception as e:
+            output = torch.zeros((1, 22050))
             print(f" * 错误: {e}")
             print(f" * 生成时出错，跳过了 '{content}'。")
             return None

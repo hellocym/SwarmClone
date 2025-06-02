@@ -8,14 +8,15 @@ from cosyvoice.cli.cosyvoice import CosyVoice   # type: ignore
 from cosyvoice.utils.file_utils import load_wav   # type: ignore
 
 emotion_to_prompt = {
-    "like": "happily, shamefully",
-    "disgust": "hugely, disgustedly",
-    "anger": "strongly, angrily",
-    "happy": "slightly, happily",
-    "sad": "sadly, tearfully",
+    "like": "happily and shamefully",
+    "disgust": "hugely and disgustedly",
+    "anger": "strongly and angrily",
+    "happy": "slightly and happily",
+    "sad": "sadly and tearfully",
 }
 
 adj_to_adv = {
+    "neutral": "neutrally",
     "like": "happily",
     "disgust": "disgustedly",
     "anger": "angrily",
@@ -31,7 +32,7 @@ def get_emotion_prompt(emotions):
     elif emotions_top2[0][1] > 0.5 and emotions_top2[1][0] != "neutral":
         return emotion_to_prompt[emotions_top2[0][0]]
     else:
-        return f"{adj_to_adv[emotions_top2[0][0]]}, {adj_to_adv[emotions_top2[1][0]]}"
+        return f"{adj_to_adv[emotions_top2[0][0]]} and {adj_to_adv[emotions_top2[1][0]]}"
 
 @torch.no_grad()
 def tts_generate(tts: List[CosyVoice], s: str, tune: str, emotions, is_linux: bool):

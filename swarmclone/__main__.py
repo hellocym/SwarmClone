@@ -13,6 +13,6 @@ if __name__ == "__main__":
     controller.register_module(FrontendSocket)
     controller.register_module(TTSCosyvoice)
     controller.register_module(LLMMiniLM2)
-    # controller.register(BiliBiliChat)
-    controller.register_module(ASRRemote)
+    controller.register_module(BiliBiliChat)
+    # controller.register_module(ASRRemote)
     controller.start()

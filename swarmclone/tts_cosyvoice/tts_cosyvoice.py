@@ -110,7 +110,8 @@ class TTSCosyvoice(ModuleBase):
                 emotions=emotions,
                 is_linux=is_linux
             )
-        except:
+        except Exception as e:
+            print(f" * 错误: {e}")
             print(f" * 生成时出错，跳过了 '{content}'。")
             return None
             

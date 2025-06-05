@@ -108,10 +108,10 @@ class Controller:
     def start(self):
         loop = asyncio.get_event_loop()
         for (module_role, modules) in self.modules.items():
-            for module in modules:
+            for i, module in enumerate(modules):
                 loop.create_task(module.run())
                 loop.create_task(self.handle_module(module))
-                print(f"{module}已启动")
+                print(f"{module}已启动（{i + 1}/{len(modules)}）")
             if len(modules) > 0:
                 print(f"{module_role.value}模块已启动")
                 

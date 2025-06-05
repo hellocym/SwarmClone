@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import requests 
 import regex
@@ -9,7 +11,7 @@ import textgrid
 
 from zhconv import convert 
 from tqdm import tqdm 
-from kalpy.utterance import  Segment 
+from kalpy.utterance import Segment 
 from kalpy.feat.cmvn import CmvnComputer 
 from kalpy.fstext.lexicon import LexiconCompiler 
 from kalpy.fstext.lexicon import HierarchicalCtm 
@@ -17,9 +19,19 @@ from kalpy.utterance import Utterance as KalpyUtterance
 from montreal_forced_aligner import config 
 from montreal_forced_aligner.alignment import PretrainedAligner 
 from montreal_forced_aligner.models import AcousticModel 
-from montreal_forced_aligner.tokenization.spacy import generate_language_tokenizer 
-from montreal_forced_aligner.corpus.classes import FileData 
-from montreal_forced_aligner.online.alignment import align_utterance_online 
+from montreal_forced_aligner.corpus.classes import FileData
+from montreal_forced_aligner.abc import MetaDict
+from montreal_forced_aligner.tokenization.spacy import generate_language_tokenizer
+from montreal_forced_aligner.online.alignment import align_utterance_online
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from spacy.language import Language
+    from montreal_forced_aligner.tokenization.chinese import ChineseTokenizer
+    from montreal_forced_aligner.tokenization.japanese import JapaneseTokenizer
+    from montreal_forced_aligner.tokenization.korean import KoreanTokenizer
+    from montreal_forced_aligner.tokenization.thai import ThaiTokenizer
+Tokenizer = ChineseTokenizer | JapaneseTokenizer | KoreanTokenizer | ThaiTokenizer | Language
 
 from ..config import ConfigSection
 
@@ -60,12 +72,13 @@ def download_model_and_dict(tts_config: ConfigSection):
             download_file(file[0], file[1])
     
     
-def init_mfa_models(tts_config, lang="zh-CN"):
+def init_mfa_models(tts_config: ConfigSection, lang: str="zh-CN") -> tuple[AcousticModel, LexiconCompiler, Tokenizer, MetaDict]:
     lang_zh_cn = ["mandarin_china_mfa.dict", "mandarin_mfa.zip"]
     lang_en_us = ["english_mfa.dict", "english_mfa.zip"]
     using_lang = lang_zh_cn if lang == "zh-CN" else lang_en_us
-    mfa_dict_path       = os.path.expanduser(os.path.join(tts_config.model_path, "mfa", using_lang[0]))
-    mfa_model_path      = os.path.expanduser(os.path.join(tts_config.model_path, "mfa", using_lang[1]))
+    assert isinstance((tts_model_path := tts_config.model_path), str)
+    mfa_dict_path       = os.path.expanduser(os.path.join(tts_model_path, "mfa", using_lang[0]))
+    mfa_model_path      = os.path.expanduser(os.path.join(tts_model_path, "mfa", using_lang[1]))
     dictionary_path     = Path(mfa_dict_path)
     acoustic_model_path = Path(mfa_model_path)
 
@@ -104,23 +117,30 @@ def init_mfa_models(tts_config, lang="zh-CN"):
         lexicon_compiler.phone_table.write_text(phones_path)
         lexicon_compiler.clear()
 
-    tokenizer = generate_language_tokenizer(acoustic_model.language)
+    tokenizer: Tokenizer = generate_language_tokenizer(acoustic_model.language)
     return acoustic_model, lexicon_compiler, tokenizer, c
 
 def align(
         sound_file_path:  Path | str,
         text_file_path:   Path | str,
-        acoustic_model:   Path | str,
-        lexicon_compiler: Path | str,
-        tokenizer, pretrained_aligner):
+        acoustic_model:   AcousticModel,
+        lexicon_compiler: LexiconCompiler,
+        tokenizer: Tokenizer,
+        pretrained_aligner: MetaDict):
     sound_file_path     = sound_file_path if isinstance(sound_file_path, Path) else Path(sound_file_path)
     text_file_path      = text_file_path if isinstance(text_file_path, Path) else Path(text_file_path)
     output_path         = sound_file_path.parent
     output_path         = output_path.joinpath(sound_file_path.stem + ".TextGrid")
-    output_format        = "long_textgrid"
+    output_format       = "long_textgrid"
 
     file_name = sound_file_path.stem
-    file = FileData.parse_file(file_name, sound_file_path, text_file_path, "", 0)
+    file = FileData.parse_file(
+        file_name,
+        str(sound_file_path),
+        str(text_file_path),
+        "",
+        0
+    )
     file_ctm = HierarchicalCtm([])
     utterances = []
     cmvn_computer = CmvnComputer()
@@ -152,7 +172,6 @@ def align(
             utt,
             lexicon_compiler,
             tokenizer=tokenizer,
-            g2p_model=None,
             beam=15,
             **align_options,
         )

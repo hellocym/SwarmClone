@@ -1,5 +1,4 @@
 import os
-from typing_extensions import override
 import tomli ## TODO: 升级到Python 3.11然后可以使用tomlib
 from typing import Any, Callable
 
@@ -27,7 +26,6 @@ class ConfigSection:
             return ConfigSection(value, new_path)
         return value
 
-    @override
     def __repr__(self):
         return f"<ConfigSection: {self._path}>"
 

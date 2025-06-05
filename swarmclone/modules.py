@@ -1,9 +1,8 @@
 from __future__ import annotations # 为了延迟注解评估
-
 import asyncio
 import time
 import random
-from enum import Enum
+from typing import Any
 from uuid import uuid4
 from .constants import *
 from .messages import *
@@ -11,13 +10,13 @@ from .config import Config
 
 class ModuleBase:
     def __init__(self, module_role: ModuleRoles, name: str, config: Config):
-        self.name = name
-        self.role = module_role
+        self.name: str = name
+        self.role: ModuleRoles = module_role
         self.task_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.results_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
-        self.config = config
+        self.config: Config = config
     
-    async def run(self):
+    async def run(self) -> None:
         while True:
             try:
                 task = self.task_queue.get_nowait()
@@ -41,16 +40,16 @@ class ModuleBase:
 class LLMBase(ModuleBase):
     def __init__(self, name: str, config: Config):
         super().__init__(ModuleRoles.LLM, name, config)
-        self.timer = time.perf_counter()
-        self.state = LLMState.IDLE
+        self.timer: float = time.perf_counter()
+        self.state: LLMState = LLMState.IDLE
         self.history: list[dict[str, str]] = []
-        self.generated_text = ""
-        self.generate_task: asyncio.Task | None = None
-        self.chat_maxsize = 20
-        self.chat_size_threshold = 10
+        self.generated_text: str = ""
+        self.generate_task: asyncio.Task[Any] | None = None
+        self.chat_maxsize: int = 20
+        self.chat_size_threshold: int = 10
         self.chat_queue: asyncio.Queue[ChatMessage] = asyncio.Queue(maxsize=self.chat_maxsize)
     
-    def _switch_to_generating(self, new_round: dict):
+    def _switch_to_generating(self, new_round: dict[str, str]):
         self.state = LLMState.GENERATING
         self.history.append(new_round)
         self.generated_text = ""
@@ -80,6 +79,8 @@ class LLMBase(ModuleBase):
         self.state = LLMState.WAITING4TTS
             
     async def run(self):
+        assert isinstance(self.config.llm.idle_time, int)
+
         while True:
             try:
                 task = self.task_queue.get_nowait()
@@ -165,7 +166,7 @@ class LLMBase(ModuleBase):
         }
         迭代直到本次回复完毕即可
         """
-        yield "", {"like": 0, "disgust": 0, "anger": 0, "happy": 0, "sad": 0, "neutral": 1.}
+        yield str(""), {"like": 0, "disgust": 0, "anger": 0, "happy": 0, "sad": 0, "neutral": 1.}
 
 class LLMDummy(LLMBase):
     def __init__(self, config: Config):

@@ -79,7 +79,7 @@ class LLMBase(ModuleBase):
         self.state = LLMState.WAITING4TTS
             
     async def run(self):
-        assert isinstance(self.config.llm.idle_time, int)
+        assert isinstance((idle_time := self.config.llm.idle_time), float | int), idle_time
 
         while True:
             try:
@@ -109,7 +109,7 @@ class LLMBase(ModuleBase):
                             self._switch_to_generating({'role': 'chat', 'content': f'{chat["user"]}：{chat["content"]}'})
                         except asyncio.QueueEmpty:
                             pass
-                    elif time.perf_counter() - self.timer > self.config.llm.idle_time:
+                    elif time.perf_counter() - self.timer > idle_time:
                         self._switch_to_generating({'role': 'system', 'content': '请随便说点什么吧！'})
                 case LLMState.GENERATING:
                     if isinstance(task, ASRActivated):

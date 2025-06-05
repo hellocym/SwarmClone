@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from montreal_forced_aligner.tokenization.japanese import JapaneseTokenizer
     from montreal_forced_aligner.tokenization.korean import KoreanTokenizer
     from montreal_forced_aligner.tokenization.thai import ThaiTokenizer
-Tokenizer = ChineseTokenizer | JapaneseTokenizer | KoreanTokenizer | ThaiTokenizer | Language
+    Tokenizer = ChineseTokenizer | JapaneseTokenizer | KoreanTokenizer | ThaiTokenizer | Language
 
 from ..config import ConfigSection
 

@@ -62,9 +62,9 @@ class FrontendSocket(ModuleBase):
             "source": task.source.role.value,
             **task.get_value(self)
         }
-        assert isinstance(d["data"], str)
         if isinstance(task, TTSAlignedAudio):
-            d["data"] = base64.b64encode(d["data"].encode("utf-8")).decode('utf-8')
+            assert isinstance(d["data"], bytes)
+            d["data"] = base64.b64encode(d["data"]).decode('utf-8')
         assert isinstance((separator := self.config.panel.server.requests_separator), str)
         massage = (
             json.dumps(d).replace(separator, "") + # 防止在不应出现的地方出现分隔符

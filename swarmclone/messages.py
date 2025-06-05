@@ -112,7 +112,7 @@ class TTSAlignedAudio(Message):
                  source: ModuleBase, 
                  id: str, 
                  audio_data: bytes, 
-                 align_data: list[dict[str, float]]
+                 align_data: list[dict[str, str | float]]
                  ):
         super().__init__(
             MessageType.DATA,

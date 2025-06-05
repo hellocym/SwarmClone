@@ -4,8 +4,8 @@ import torch
 from typing import List, Optional
 
 from pathlib import Path
-from cosyvoice.cli.cosyvoice import CosyVoice   # type: ignore
-from cosyvoice.utils.file_utils import load_wav   # type: ignore
+from cosyvoice.cli.cosyvoice import CosyVoice 
+from cosyvoice.utils.file_utils import load_wav 
 
 emotion_to_prompt = {
     "like": "happily and shamefully",

@@ -1,10 +1,7 @@
 import os
 import sys
-import base64
 import warnings
 import shutil
-import socket
-import threading
 import tempfile
 import asyncio
 from time import time
@@ -16,7 +13,7 @@ from ..config import Config
 from ..modules import ModuleRoles, ModuleBase
 from ..messages import *
 
-from cosyvoice.cli.cosyvoice import CosyVoice   # type: ignore
+from cosyvoice.cli.cosyvoice import CosyVoice 
 from .align import download_model_and_dict, init_mfa_models, align, match_textgrid
 from .funcs import tts_generate
 
@@ -29,8 +26,9 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_no
 is_linux = sys.platform.startswith("linux")
 def init_tts(config: Config):
     # TTS Model 初始化
+    assert isinstance(config.tts.cosyvoice.model_path, str), "model_path 配置项必须为字符串"
     try:
-        model_path = os.path.expanduser(config.tts.cosyvoice.model_path)
+        model_path: str = os.path.expanduser(config.tts.cosyvoice.model_path)
         if is_linux:
             print(f" * 将使用 {config.tts.cosyvoice.ins_model} & {config.tts.cosyvoice.sft_model} 进行生成。")
             cosyvoice_sft = CosyVoice(os.path.join(model_path, config.tts.cosyvoice.sft_model), fp16=config.tts.cosyvoice.float16)
@@ -100,7 +98,7 @@ class TTSCosyvoice(ModuleBase):
                 await self.processed_queue.put(task)
 
     @torch.no_grad()
-    async def generate_sentence(self, id: str, content: str, emotions: dict) -> Message | None:
+    async def generate_sentence(self, id: str, content: str, emotions: dict[str, float]) -> Message | None:
         try:
             output = await asyncio.to_thread(
                 tts_generate,
@@ -148,5 +146,3 @@ class TTSCosyvoice(ModuleBase):
             with open(audio_name, "rb") as f:
                 audio_data = f.read()
         await self.results_queue.put(TTSAlignedAudio(self, id, audio_data, intervals))
-
-        return None # 别让mypy报错

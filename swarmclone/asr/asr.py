@@ -25,7 +25,7 @@ class ASRSherpa(ModuleBase):
 
     async def run(self):
         assert isinstance((host := self.config.panel.server.host), str)
-        assert isinstance((port := self.config.panel.frontend.port), int)
+        assert isinstance((port := self.config.asr.port), int)
         self.server = await asyncio.start_server(self.handle_client, host, port)
         async with self.server:
             await self.server.serve_forever()
@@ -40,30 +40,33 @@ class ASRSherpa(ModuleBase):
         try:
             password = getattr(self.userdb, checkmessage['name'])
         except(AttributeError):
-            writer.write('WRUSR'.encode('utf-8'))
+            writer.write('WRUSR\n'.encode('utf-8'))
             await writer.drain()
             writer.close()
             await writer.wait_closed()
             return
         if not checkmessage['passwd'] == password:
-            writer.write('WRPWD'.encode('utf-8'))
+            writer.write('WRPWD\n'.encode('utf-8'))
             await writer.drain()
             writer.close()
             await writer.wait_closed()
             return
         else:
-            writer.write('OK'.encode('utf-8'))
+            writer.write('OK\n'.encode('utf-8'))
             await writer.drain()
+        user_name: str = checkmessage['user']
 
         addr = writer.get_extra_info('peername')
         print(f"客户端已连接：{addr}")
         self.clientdict[addr[1]] = writer
         while True:
             to_remove = []
-            data =  await reader.read(self.samples_per_read*8)
+            # 获取音频流并转化为数组
+            data = await reader.read(self.samples_per_read*8)
             if not data:
                 break
             sample = np.frombuffer(data, dtype=np.float32).astype(np.float64)
+            # 语音活动检测
             self.vad.accept_waveform(sample)
             if self.vad.is_speech_detected():
                 if not self.speech_started:
@@ -71,21 +74,25 @@ class ASRSherpa(ModuleBase):
                     self.speech_started = True
             else:
                 self.speech_started = False
+            # 语音识别
             self.stream.accept_waveform(self.sample_rate, sample)
             while self.recognizer.is_ready(self.stream):
                 self.recognizer.decode_stream(self.stream)
-            is_endpoint = self.recognizer.is_endpoint(self.stream)
+            # 将检测到的结果发送给客户端
             result: str = self.recognizer.get_result(self.stream)
-            if is_endpoint:
+            writer.write((result + "\n").encode('utf-8'))
+            await writer.drain()
+            # 如果识别完毕则发出
+            if self.recognizer.is_endpoint(self.stream):
                 if result:
-                    await self.results_queue.put(ASRMessage(self, "Developer A", result))
+                    await self.results_queue.put(ASRMessage(self, user_name, result))
                 self.recognizer.reset(self.stream)
         print(f"客户端 {addr} 已断开连接")
         writer.close()
         await writer.wait_closed()
         to_remove.append(addr)
         for addr in to_remove:
-            del self.clientdict[addr]
+            del self.clientdict[addr[1]]
         return
 
     async def process_task(self, task: Message | None) -> Message | None:

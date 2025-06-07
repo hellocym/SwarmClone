@@ -54,7 +54,7 @@ class ASRSherpa(ModuleBase):
         else:
             writer.write('OK\n'.encode('utf-8'))
             await writer.drain()
-        user_name: str = checkmessage['user']
+        user_name: str = checkmessage['name']
 
         addr = writer.get_extra_info('peername')
         print(f"客户端已连接：{addr}")

@@ -1,5 +1,4 @@
 import asyncio
-from socket import timeout
 import numpy as np
 import json
 from typing import Any
@@ -8,7 +7,7 @@ from typing import Any
 from .sherpa_asr import create_recognizer
 from ..config import Config
 from ..modules import ModuleRoles, ModuleBase
-from ..messages import Message, ASRMessage, ASRActivated
+from ..messages import ASRMessage, ASRActivated
 
 class ASRSherpa(ModuleBase):
     def __init__(self, config: Config):
@@ -90,7 +89,3 @@ class ASRSherpa(ModuleBase):
         await writer.wait_closed()
         del self.clientdict[addr]
         return None
-
-    async def process_task(self, task: Message | None) -> Message | None:
-    # 不应被调用
-        raise NotImplementedError

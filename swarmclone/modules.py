@@ -47,15 +47,15 @@ class LLMBase(ModuleBase):
         self.chat_maxsize: int = 20
         self.chat_size_threshold: int = 10
         self.chat_queue: asyncio.Queue[ChatMessage] = asyncio.Queue(maxsize=self.chat_maxsize)
-        self.asr_timeout: int = 30 ## TODO：是否应该加入设置项？
-        self.tts_timeout: int = 30
+        self.asr_timeout: int = 60 # 应该没有人说话一分钟不停
+        self.tts_timeout: int = 60 ## TODO：是否应该加入设置项？
         self.idle_start_time: float = time.time()
         self.waiting4asr_start_time: float = time.time()
         self.waiting4tts_start_time: float = time.time()
+        self.asr_counter = 0 # 有多少人在说话？
     
-    def _switch_to_generating(self, new_round: dict[str, str]):
+    def _switch_to_generating(self):
         self.state = LLMState.GENERATING
-        self.history.append(new_round)
         self.generated_text = ""
         self.generate_task = asyncio.create_task(self.start_generating())
     
@@ -70,6 +70,7 @@ class LLMBase(ModuleBase):
         self.generate_task = None
         self.state = LLMState.WAITING4ASR
         self.waiting4asr_start_time = time.time()
+        self.asr_counter = 1 # 等待第一个人
     
     def _switch_to_idle(self):
         self.state = LLMState.IDLE
@@ -111,12 +112,14 @@ class LLMBase(ModuleBase):
                         self._switch_to_waiting4asr()
                     elif not self.chat_queue.empty():
                         try:
-                            chat = self.chat_queue.get_nowait().get_value(self)
-                            self._switch_to_generating({'role': 'chat', 'content': f'{chat["user"]}：{chat["content"]}'})
+                            chat = self.chat_queue.get_nowait().get_value(self) # 逐条回复弹幕
+                            self.history.append({'role': 'chat', 'content': f'{chat["user"]}：{chat["content"]}'}) ## TODO：可能需要一次回复多条弹幕
+                            self._switch_to_generating()
                         except asyncio.QueueEmpty:
                             pass
                     elif time.time() - self.idle_start_time > idle_timeout:
-                        self._switch_to_generating({'role': 'system', 'content': '请随便说点什么吧！'})
+                        self.history.append({'role': 'system', 'content': '请随便说点什么吧！'})
+                        self._switch_to_generating()
                 case LLMState.GENERATING:
                     if isinstance(task, ASRActivated):
                         self._switch_to_waiting4asr()
@@ -124,15 +127,20 @@ class LLMBase(ModuleBase):
                         self._switch_to_waiting4tts()
                 case LLMState.WAITING4ASR:
                     if time.time() - self.waiting4asr_start_time > self.asr_timeout:
-                        self._switch_to_idle() # 太久没有ASR文字接收，说明VAD误触发，回到待机
+                        self._switch_to_idle() # ASR超时，回到待机
                     if task is not None and isinstance(task, ASRMessage):
                         message_value = task.get_value(self)
                         speaker_name = message_value["speaker_name"]
                         content = message_value["message"]
-                        self._switch_to_generating({
+                        self.history.append({
                             'role': 'user',
                             'content': f"{speaker_name}：{content}"
                         })
+                        self.asr_counter -= 1 # 有人说话完毕，计数器-1
+                    if task is not None and isinstance(task, ASRActivated):
+                        self.asr_counter += 1 # 有人开始说话，计数器+1
+                    if self.asr_counter <= 0: # 所有人说话完毕，开始生成
+                        self._switch_to_generating()
                 case LLMState.WAITING4TTS:
                     if time.time() - self.waiting4tts_start_time > self.tts_timeout:
                         self._switch_to_idle() # 太久没有TTS完成信息，说明TTS生成失败，回到待机

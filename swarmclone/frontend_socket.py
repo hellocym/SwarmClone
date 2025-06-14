@@ -21,11 +21,11 @@ class FrontendSocket(ModuleBase):
             host, 
             port
         )
-        loop.create_task(self.SendToFrontend())
+        loop.create_task(self.send_to_frontend())
         async with self.server:
             await self.server.serve_forever()
     
-    async def SendToFrontend(self):
+    async def send_to_frontend(self):
         while True:
             task = await self.task_queue.get()
             print(type(task))

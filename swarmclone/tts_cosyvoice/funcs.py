@@ -31,11 +31,11 @@ def get_emotion_prompt(emotions: dict[str, float]):
         return f"{adj_to_adv[emotions_top2[0][0]]} and {adj_to_adv[emotions_top2[1][0]]}"
 
 @torch.no_grad()
-def tts_generate(tts: list[CosyVoice | None], s: str, tune: str, emotions: dict[str, float], is_linux: bool):
+def tts_generate(tts: tuple[CosyVoice | None, CosyVoice], s: str, tune: str, emotions: dict[str, float], is_linux: bool):
     """tts生成
 
     Args:
-        tts (List[CosyVoice]):  对于 Windows 传入 [cosyvoice_ins], linux 传入 [cosyvoice_sft, cosyvoice_ins]
+        tts (tuple[CosyVoice]): 对于 Windows 传入 (None, cosyvoice_ins), linux 传入 (cosyvoice_sft, cosyvoice_ins)
         s (str):                需要生成的文本
         tune (str):             使用的音色
         emotions (EmotionType): 感情
@@ -59,5 +59,4 @@ def tts_generate(tts: list[CosyVoice | None], s: str, tune: str, emotions: dict[
     if not is_linux:
         return list(tts[0].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]
     else:
-        assert tts[1] is not None
         return list(tts[1].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]

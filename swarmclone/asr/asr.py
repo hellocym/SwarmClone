@@ -62,10 +62,9 @@ class ASRSherpa(ModuleBase):
                 data = await asyncio.wait_for(reader.readexactly(self.samples_per_read*8), timeout=1)
             except asyncio.IncompleteReadError:
                 break
-            except asyncio.exceptions.TimeoutError:
+            except asyncio.TimeoutError:
                 break
             sample = np.frombuffer(data, dtype=np.float32).astype(np.float64)
-            # 语音活动检测
             # 语音识别
             self.stream.accept_waveform(self.sample_rate, sample)
             while self.recognizer.is_ready(self.stream):

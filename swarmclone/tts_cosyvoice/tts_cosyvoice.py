@@ -20,8 +20,8 @@ from .funcs import tts_generate
 # 忽略警告
 warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*")
 warnings.filterwarnings("ignore", message=".*torch.nn.utils.weight_norm.*")
-warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_only=False.*")
-warnings.filterwarnings("ignore", category=FutureWarning, message=r".*weights_norm.*")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*weights_only=False.*")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*weights_norm.*")
 
 is_linux = sys.platform.startswith("linux")
 def init_tts(config: Config):
@@ -35,11 +35,10 @@ def init_tts(config: Config):
         if is_linux:
             print(f" * 将使用 {config.tts.cosyvoice.ins_model} & {config.tts.cosyvoice.sft_model} 进行生成。")
             cosyvoice_sft = CosyVoice(os.path.join(full_model_path, sft_model), fp16=fp16)
-            cosyvoice_ins = CosyVoice(os.path.join(full_model_path, ins_model), fp16=fp16)
         else:
             print(f" * 将使用 {config.tts.cosyvoice.ins_model} 进行生成。")
             cosyvoice_sft = None
-            cosyvoice_ins = CosyVoice(os.path.join(full_model_path, ins_model), fp16=fp16)
+        cosyvoice_ins = CosyVoice(os.path.join(full_model_path, ins_model), fp16=fp16)
     except Exception as e:
         err_msg = str(e).lower()
         if ("file" in err_msg) and ("doesn't" in err_msg) and ("exist" in err_msg):
@@ -79,7 +78,7 @@ def init_mfa(config: Config):
 class TTSCosyvoice(ModuleBase):
     def __init__(self, config: Config):
         super().__init__(ModuleRoles.TTS, "TTSCosyvoice", config)
-        self.cosyvoice_sft, self.cosyvoice_ins = init_tts(config)
+        self.cosyvoice_models = init_tts(config)
         self.zh_acoustic, self.zh_lexicon, self.zh_tokenizer, self.zh_aligner = init_mfa(config)
         self.processed_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
 
@@ -112,7 +111,7 @@ class TTSCosyvoice(ModuleBase):
             assert isinstance((tune := self.config.tts.cosyvoice.tune), str)
             output = await asyncio.to_thread(
                 tts_generate,
-                tts=[self.cosyvoice_sft, self.cosyvoice_ins],
+                tts=self.cosyvoice_models,
                 s=content.strip(),
                 tune=tune,
                 emotions=emotions,

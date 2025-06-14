@@ -44,7 +44,9 @@ def tts_generate(tts: tuple[CosyVoice | None, CosyVoice], s: str, tune: str, emo
     assert isinstance(tts[0], CosyVoice)
     prompt = get_emotion_prompt(emotions)
     if prompt == "neutral":
-        if not is_linux:
+        if is_linux:
+            return list(tts[1].inference_instruct(s.strip(), tune, instruct_text="neutrally", stream=False))[0]["tts_speech"]
+        else:
             prompt_speech_16k = load_wav(Path(__file__).parent / "asset" / "知络_1.2_ENHANCE.mp3", 16000)
             return list(
                 tts[0].inference_zero_shot(
@@ -54,9 +56,7 @@ def tts_generate(tts: tuple[CosyVoice | None, CosyVoice], s: str, tune: str, emo
                     stream=False
                 )
             )[0]["tts_speech"]
-        else:
-            return list(tts[0].inference_sft(s.strip(), tune, stream=False))[0]["tts_speech"]
-    if not is_linux:
-        return list(tts[0].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]
-    else:
+    if is_linux:
         return list(tts[1].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]
+    else:
+        return list(tts[0].inference_instruct(s.strip(), tune, prompt, stream=False))[0]["tts_speech"]

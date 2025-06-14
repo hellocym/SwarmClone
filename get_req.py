@@ -145,7 +145,7 @@ print(
     """
 [get_req.py]    先决条件检查完毕！准备安装。安装速度受网络影响，进度较慢请耐心等待或检查网络。
                 1. ASR
-                2. MiniLM & Qwen2.5
+                2. MiniLM
                 3. Cosyvoice TTS
                 4. Panel
                 

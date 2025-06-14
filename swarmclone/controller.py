@@ -50,7 +50,7 @@ class Controller:
             case _:
                 pass
         self.modules[module.role].append(module)
-                   
+
     def register_routes(self):
         """ 注册FastAPI路由
         

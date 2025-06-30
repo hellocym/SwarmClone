@@ -4,9 +4,9 @@ from huggingface_hub import snapshot_download as huggingface_snapshot_download
 def download_model(model_id: str, model_source: str, local_dir: str):
     match model_source:
         case "modelscope":
-            modelscope_snapshot_download(model_id, cache_dir=local_dir, repo_type="model")
+            modelscope_snapshot_download(model_id, local_dir=local_dir, repo_type="model")
         case "huggingface":
-            huggingface_snapshot_download(model_id, cache_dir=local_dir, repo_type="model")
+            huggingface_snapshot_download(model_id, local_dir=local_dir, repo_type="model")
         case x if x.startswith("openai+"):
             raise ValueError((
                 f"OpenAI API模型不能被下载。"

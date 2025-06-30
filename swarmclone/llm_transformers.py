@@ -107,16 +107,13 @@ class LLMTransformers(LLMBase):
         print(text)
         labels = ['neutral', 'like', 'sad', 'disgust', 'anger', 'happy']
         ids = self.classifier_tokenizer([text], return_tensors="pt")['input_ids']
-        """
         probs = (
             (await asyncio.to_thread(self.classifier_model, input_ids=ids))
             .logits
             .softmax(dim=-1)
             .squeeze()
         )
-        """
-        logits: torch.Tensor = (await asyncio.to_thread(self.classifier_model, input_ids=ids)).logits.squeeze()
-        return dict(zip(labels, logits.softmax(dim=-1).tolist()))
+        return dict(zip(labels, probs.tolist()))
     
     @torch.no_grad()
     async def iter_sentences_emotions(self):

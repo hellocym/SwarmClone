@@ -71,9 +71,9 @@ class LLMOpenAI(LLMBase):
                     assert isinstance((model_source := config.llm.emotionclassification.model_source), str)
                     download_model(model_id, model_source, abs_classifier_path)
         
-        assert isinstance((model_id := config.llm.emotionclassification.model_id), str)
+        assert isinstance((model_id := config.llm.main_model.model_id), str)
         self.model_id = model_id
-        assert isinstance((model_source := config.llm.emotionclassification.model_source), str)
+        assert isinstance((model_source := config.llm.main_model.model_source), str)
         assert model_source.startswith("openai+"), "`LLMOpenAI`只支持使用openai风格API的模型"
         assert isinstance((api_key := config.llm.main_model.api_key), str) and api_key, "请设置API key"
         self.url = model_source[7:] # 去掉openai+
@@ -89,16 +89,13 @@ class LLMOpenAI(LLMBase):
         print(text)
         labels = ['neutral', 'like', 'sad', 'disgust', 'anger', 'happy']
         ids = self.classifier_tokenizer([text], return_tensors="pt")['input_ids']
-        """
         probs = (
             (await asyncio.to_thread(self.classifier_model, input_ids=ids))
             .logits
             .softmax(dim=-1)
             .squeeze()
         )
-        """
-        logits: torch.Tensor = (await asyncio.to_thread(self.classifier_model, input_ids=ids)).logits.squeeze()
-        return dict(zip(labels, logits.softmax(dim=-1).tolist()))
+        return dict(zip(labels, probs.tolist()))
     
     def dict2message(self, message: dict[str, str]):
         match message:

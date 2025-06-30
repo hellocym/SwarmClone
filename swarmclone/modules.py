@@ -53,6 +53,17 @@ class LLMBase(ModuleBase):
         self.waiting4asr_start_time: float = time.time()
         self.waiting4tts_start_time: float = time.time()
         self.asr_counter = 0 # 有多少人在说话？
+        assert isinstance((chat_role := self.config.llm.main_model.chat_role), str)
+        self.chat_role = chat_role
+        assert isinstance((asr_role := self.config.llm.main_model.asr_role), str)
+        self.asr_role = asr_role
+        assert isinstance((chat_template := self.config.llm.main_model.chat_template), str)
+        self.chat_template = chat_template
+        assert isinstance((asr_template := self.config.llm.main_model.asr_template), str)
+        self.asr_template = asr_template
+        assert isinstance((system_prompt := self.config.llm.main_model.system_prompt), str)
+        if system_prompt:
+            self.history += [{'role': 'system', 'content': system_prompt}]
     
     def _switch_to_generating(self):
         self.state = LLMState.GENERATING
@@ -63,9 +74,7 @@ class LLMBase(ModuleBase):
         if self.generate_task is not None and not self.generate_task.done():
             self.generate_task.cancel()
         if self.generated_text:
-            self.history += [
-                {'role': 'assistant', 'content': self.generated_text}
-            ]
+            self._add_llm_history(self.generated_text)
         self.generated_text = ""
         self.generate_task = None
         self.state = LLMState.WAITING4ASR
@@ -77,14 +86,32 @@ class LLMBase(ModuleBase):
         self.idle_start_time = time.time()
     
     def _switch_to_waiting4tts(self):
-        self.history += [
-            {'role': 'user', 'content': self.generated_text}
-        ]
+        self._add_llm_history(self.generated_text)
         self.generated_text = ""
         self.generate_task = None
         self.state = LLMState.WAITING4TTS
         self.waiting4tts_start_time = time.time()
-            
+    
+    def _add_chat_history(self, user: str, content: str):
+        self.history += [
+            {'role': self.chat_role, 'content': self.chat_template.format(user=user, content=content)}
+        ]
+    
+    def _add_asr_history(self, user: str, content: str):
+        self.history += [
+            {'role': self.asr_role, 'content': self.asr_template.format(user=user, content=content)}
+        ]
+    
+    def _add_llm_history(self, content: str):
+        self.history += [
+            {'role': 'assistant', 'content': content}
+        ]
+    
+    def _add_system_history(self, content: str):
+        self.history += [
+            {'role': 'system', 'content': content}
+        ]
+   
     async def run(self):
         assert isinstance((idle_timeout := self.config.llm.idle_time), float | int), idle_timeout
 
@@ -113,12 +140,12 @@ class LLMBase(ModuleBase):
                     elif not self.chat_queue.empty():
                         try:
                             chat = self.chat_queue.get_nowait().get_value(self) # 逐条回复弹幕
-                            self.history.append({'role': 'chat', 'content': f'{chat["user"]}：{chat["content"]}'}) ## TODO：可能需要一次回复多条弹幕
+                            self._add_chat_history(chat['user'], chat['content']) ## TODO：可能需要一次回复多条弹幕
                             self._switch_to_generating()
                         except asyncio.QueueEmpty:
                             pass
                     elif time.time() - self.idle_start_time > idle_timeout:
-                        self.history.append({'role': 'system', 'content': '请随便说点什么吧！'})
+                        self._add_system_history("请随便说点什么吧！")
                         self._switch_to_generating()
                 case LLMState.GENERATING:
                     if isinstance(task, ASRActivated):
@@ -132,10 +159,7 @@ class LLMBase(ModuleBase):
                         message_value = task.get_value(self)
                         speaker_name = message_value["speaker_name"]
                         content = message_value["message"]
-                        self.history.append({
-                            'role': 'user',
-                            'content': f"{speaker_name}：{content}"
-                        })
+                        self._add_asr_history(speaker_name, content)
                         self.asr_counter -= 1 # 有人说话完毕，计数器-1
                     if task is not None and isinstance(task, ASRActivated):
                         self.asr_counter += 1 # 有人开始说话，计数器+1

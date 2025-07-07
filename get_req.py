@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import os
+from swarmclone import __version__
 
 requirements = {
     "pip": {
@@ -86,13 +87,13 @@ os_system = sys.platform
 conda_path = None
 
 print(
-    """                                            
+f"""                                            
  _____                     _____ _             
 |   __|_ _ _ ___ ___ _____|     | |___ ___ ___ 
 |__   | | | | .'|  _|     |   --| | . |   | -_|
 |_____|_____|__,|_| |_|_|_|_____|_|___|_|_|___|
     
-[get_req.py]    开始安装 SwarmClone AI 1.0 相关依赖。
+[get_req.py]    开始安装 SwarmClone {__version__} 相关依赖。
 
 [Prerequisite]  已安装 Conda 并配置 PATH。
 [Prerequisite]  已安装 Node.js 以及 NPM 并配置 PATH。

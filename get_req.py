@@ -39,7 +39,9 @@ requirements = {
             # FastAPI Controller
             "fastapi",
             # API LLM
-            "openai"
+            "openai",
+            # QQ Bot
+            "ncatbot"
         ],
         "linux": [
             # tts

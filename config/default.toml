@@ -9,18 +9,18 @@ port = 8002
 [llm]
 port = 8003
 device = "cuda"
-idle_time = 30
+idle_time = inf
 
 [llm.main_model]
-model_path = "~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-dialogue"
-model_id = "KyvYang/MiniLM2-nGPT-0.4b-dialogue"
+model_path = "~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-instruct"
+model_id = "KyvYang/MiniLM2-nGPT-0.4b-instruct"
 model_source = "modelscope" # 模型来源平台，如果以openai+开头则认为是openai风格的网络api，openai+后的内容被认为是openai的api地址
 api_key = "" # openai的api key
-system_prompt = "你是一个名为知络的人工智能虚拟主播。你将与弹幕（以“弹幕-【用户名】：【内容】”信息格式呈现）和你的开发者或其他主播（以“【用户名】：【内容】”信息格式呈现）进行互动。"
+system_prompt = "你是一个名为知络的人工智能虚拟主播。你将与弹幕（以“【用户名】：【内容】”信息格式呈现）和你的开发者或其他主播（以“【用户名】：【内容】”信息格式呈现）进行互动。"
 chat_role = "chat" # MiniLM2有专门的弹幕角色
-chat_template = "弹幕-{name}：{content}"
+chat_template = "{user}：{content}"
 asr_role = "user"
-asr_template = "{name}：{content}"
+asr_template = "{user}：{content}"
 stop_string = "\n\n\n"
 temperature = 0.7
 
@@ -74,3 +74,8 @@ dedeuserid=""
 ac_time_value=""
 #credential参数的获取请参考 https://nemo2011.github.io/bilibili-api/#/get-credential
 #获取完整弹幕信息仅需要sessdata
+
+[chat.ncatbot]
+target_group_id = "1017493942" # QQ群号
+bot_id = "3892018334" # QQ机器人QQ号
+root_id = "3293972019" # 管理员QQ号

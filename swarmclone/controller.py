@@ -27,6 +27,8 @@ class Controller:
         self.app: FastAPI = FastAPI(title="Zhiluo Controller")
         self.register_routes()
         self.load(config or Config())
+        self.module_tasks: list[asyncio.Task[Any]] = []
+        self.handler_tasks: list[asyncio.Task[Any]] = []
     
     def load(self, config: Config):
         self.config: Config = config
@@ -50,6 +52,16 @@ class Controller:
             case _:
                 pass
         self.modules[module.role].append(module)
+    
+    def clear_modules(self):
+        self.modules: dict[ModuleRoles, list[ModuleBase]] = {
+            ModuleRoles.ASR: [],
+            ModuleRoles.CHAT: [],
+            ModuleRoles.FRONTEND: [],
+            ModuleRoles.LLM: [],
+            ModuleRoles.PLUGIN: [],
+            ModuleRoles.TTS: [],
+        }
 
     def register_routes(self):
         """ 注册FastAPI路由
@@ -104,17 +116,34 @@ class Controller:
         for destination in message.destinations:
             for module_destination in self.modules[destination]:
                 await module_destination.task_queue.put(message)
-
-    def start(self):
+    
+    def start_modules(self):
         loop = asyncio.get_event_loop()
         for (module_role, modules) in self.modules.items():
-            for i, module in enumerate(modules):
-                loop.create_task(module.run())
-                loop.create_task(self.handle_module(module))
+            for i, module in enumerate(filter(lambda x: not x.running, modules)):
+                self.module_tasks.append(loop.create_task(module.run(), name=repr(module)))
+                self.handler_tasks.append(loop.create_task(self.handle_module(module), name=f"{module_role} handler"))
                 print(f"{module}已启动（{i + 1}/{len(modules)}）")
+                module.running = True
             if len(modules) > 0:
                 print(f"{module_role.value}模块已启动")
-                
+
+    def stop_modules(self):
+        for task in self.module_tasks:
+            print(f"停止{task.get_name()}模块任务")
+            task.cancel()
+        for task in self.handler_tasks:
+            print(f"停止{task.get_name()}模块任务")
+            task.cancel()
+        for _role, modules in self.modules.items():
+            for module in modules:
+                module.running = False
+        self.module_tasks.clear()
+        self.handler_tasks.clear()
+
+    def run(self):
+        self.start_modules()
+        
         uvcorn_config = uvicorn.Config(
             self.app,
             host="0.0.0.0",
@@ -122,10 +151,15 @@ class Controller:
             loop="asyncio"
         )
         server = uvicorn.Server(uvcorn_config)
+        loop = asyncio.get_event_loop()
+        server_task = loop.create_task(server.serve())
         try:
-            loop.run_until_complete(server.serve())
+            loop.run_until_complete(server_task)
         except KeyboardInterrupt:
-            print("关闭服务器...")
+            self.stop_modules()
+            server_task.cancel()
+        finally:
+            loop.run_until_complete(server.shutdown())
     
     async def handle_module(self, module: ModuleBase):
         while True:

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 from .constants import MessageType, ModuleRoles
 
 if TYPE_CHECKING:
-    from .modules import ModuleBase
+    from .module_manager import ModuleBase  # 使用延迟导入解决循环依赖
 
 class Message:
     def __init__(self, message_type: MessageType,

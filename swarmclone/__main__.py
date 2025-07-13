@@ -1,3 +1,4 @@
+from .module_manager import modules
 from .controller import Controller
 from .modules import *
 from .constants import *
@@ -11,6 +12,7 @@ from .plugins import *
 from .ncatbot_modules import *
 
 if __name__ == "__main__":
+    """
     ## TODO：从命令行接收配置文件、模块列表等参数
     controller = Controller(config=Config())
     controller.register_module(ScheduledPlaylist)
@@ -24,3 +26,5 @@ if __name__ == "__main__":
     controller.register_module(NCatBotChat)
     controller.register_module(NCatBotFrontend)
     controller.start()
+    """
+    pass

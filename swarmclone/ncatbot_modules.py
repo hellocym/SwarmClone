@@ -1,4 +1,9 @@
-from ncatbot.core import BotClient, GroupMessage
+from __future__ import annotations
+try:
+    from ncatbot.core import BotClient, GroupMessage
+    available = True
+except ImportError:
+    available = False
 from threading import Lock
 from .constants import *
 from .messages import *
@@ -11,6 +16,7 @@ import random
 class NCatBotChat(ModuleBase):
     """从NCatBot获取消息并作为Chat信息发送给主控"""
     def __init__(self, config: Config):
+        assert available, "NCatBotChat requires ncatbot to be installed"
         super().__init__(ModuleRoles.CHAT, "NCatBotChat", config)
         lock = Lock()
         lock.acquire()

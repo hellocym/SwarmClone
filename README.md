@@ -25,15 +25,15 @@ $ UV_TORCH_BACKEND=auto uv pip install torch torchaudio
 随后，根据你的操作系统安装不同的依赖：
 - Windows：
 ```console
->pip sync --group windows
+>uv sync --group windows
 ```
 - Linux：
 ```console
-$ pip sync --group linux
+$ uv sync --group linux
 ```
 若需要使用qqbot功能，你还需要安装`ncatbot`：
 ```console
-$ pip install ncatbot
+$ uv pip install ncatbot
 ```
 注意此处使用pip是因为ncatbot与其他依赖有已知冲突，若后续使用出现问题请发issue。
 ### Node.js 部分

@@ -7,35 +7,7 @@ from uuid import uuid4
 from .constants import *
 from .messages import *
 from .config import Config
-
-class ModuleBase:
-    def __init__(self, module_role: ModuleRoles, name: str, config: Config):
-        self.name: str = name
-        self.role: ModuleRoles = module_role
-        self.task_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
-        self.results_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
-        self.config: Config = config
-    
-    async def run(self) -> None:
-        while True:
-            try:
-                task = self.task_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                task = None
-            result = await self.process_task(task)
-            if result is not None:
-                await self.results_queue.put(result)
-            await asyncio.sleep(0.1)
-
-    def __repr__(self):
-        return f"<{self.role} {self.name}>"
-
-    async def process_task(self, task: Message | None) -> Message | None:
-        """
-        处理任务的方法，每个循环会自动调用
-        返回None表示不需要返回结果，返回Message对象则表示需要返回结果，返回的对象会自动放入results_queue中。
-        也可以选择手动往results_queue中put结果然后返回None
-        """
+from .module_manager import ModuleBase
 
 class LLMBase(ModuleBase):
     def __init__(self, name: str, config: Config):
@@ -256,4 +228,3 @@ class ControllerDummy(ModuleBase):
     """给Controller直接发送消息用的马甲，没有实际功能"""
     def __init__(self, config: Config):
         super().__init__(ModuleRoles.CONTROLLER, "ControllerDummy", config)
-    

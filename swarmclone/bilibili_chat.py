@@ -1,11 +1,14 @@
-from bilibili_api import live,  Credential
- 
 from .config import Config
 from .modules import ModuleRoles, ModuleBase
 from .messages import *
 
 class BiliBiliChat(ModuleBase):
     def __init__(self, config: Config):
+        try:
+            from bilibili_api import live, Credential
+        except ImportError:
+            raise ImportError("请安装bilibili-api-python")
+
         super().__init__(ModuleRoles.CHAT, "BiliBiliChat", config)
         assert isinstance((sessdata := config.chat.bilibili.credential.sessdata), str)
         assert isinstance((bili_jct := config.chat.bilibili.credential.bili_jct), str)

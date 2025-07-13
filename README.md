@@ -13,32 +13,42 @@
 - 见“总技术路线”
 
 ## 如何开始？
+### Python 部分
 您需要安装Python3.10和[uv](https://docs.astral.sh/uv/)：
 ```console
 $ pip install uv
 ```
 随后安装torch以及torchaudio：
 ```
-$ UV_TORCH_BACKEND=auto uv pip install torch
+$ UV_TORCH_BACKEND=auto uv pip install torch torchaudio
 ```
-最后安装剩余依赖：
-```console
-uv sync
-```
-若需要使用tts功能，你需要根据你的操作系统安装不同的依赖：
+随后，根据你的操作系统安装不同的依赖：
 - Windows：
 ```console
->pip sync --group tts_windows
+>pip sync --group windows
 ```
 - Linux：
 ```console
-$ pip sync --group tts_linux
+$ pip sync --group linux
 ```
 若需要使用qqbot功能，你还需要安装`ncatbot`：
 ```console
 $ pip install ncatbot
 ```
-注意此处使用pip是因为ncatbot与其他依赖有冲突，若后续使用出现问题请发issue。
+注意此处使用pip是因为ncatbot与其他依赖有已知冲突，若后续使用出现问题请发issue。
+### Node.js 部分
+您需要安装Node.js和npm，可通过`npm --version`验证Node.js可用。
+首先，下载Panel：
+```console
+$ git submodule init
+$ git submodule update
+```
+然后，进入Panel目录并安装依赖：
+```console
+$ cd panel
+$ npm install
+$ npm run build
+```
 
 ## 如何参与开发？
 - 您可以加入我们的开发QQ群：1017493942

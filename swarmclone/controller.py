@@ -17,12 +17,7 @@ from . import __version__
 class Controller:
     def __init__(self, config: Config | None = None):
         self.modules: dict[ModuleRoles, list[ModuleBase]] = {
-            ModuleRoles.ASR: [],
-            ModuleRoles.CHAT: [],
-            ModuleRoles.FRONTEND: [],
-            ModuleRoles.LLM: [],
-            ModuleRoles.PLUGIN: [],
-            ModuleRoles.TTS: [],
+            role: [] for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
         }
         self.app: FastAPI = FastAPI(title="Zhiluo Controller")
         self.register_routes()
@@ -36,7 +31,7 @@ class Controller:
             for module in modules:
                 module.config = config
 
-    def register_module(self, module_class: type[ModuleBase], **kwargs: Any):
+    def register_module(self, module_class: ModuleType, **kwargs: Any):
         """
         注册模块
         module_class: 模块类

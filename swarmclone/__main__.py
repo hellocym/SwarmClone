@@ -1,4 +1,4 @@
-from .module_manager import modules
+from .module_manager import module_classes
 from .controller import Controller
 from .modules import *
 from .constants import *
@@ -12,7 +12,7 @@ from .plugins import *
 from .ncatbot_modules import *
 
 if __name__ == "__main__":
-    print(f"{modules=}")
+    print(f"{module_classes=}")
     controller = Controller(config=Config())
     controller.run()
     pass

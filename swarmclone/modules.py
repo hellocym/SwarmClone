@@ -7,7 +7,7 @@ from uuid import uuid4
 from .constants import *
 from .messages import *
 from .config import Config
-from .module_manager import ModuleBase
+from .module_manager import *
 
 class LLMBase(ModuleBase):
     role: ModuleRoles = ModuleRoles.LLM

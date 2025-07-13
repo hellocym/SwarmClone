@@ -7,15 +7,17 @@ class ModuleManager(type):
     def __new__(cls, name: str, bases: tuple[type, ...], attrs: dict[str, Any]):
         new_class = super().__new__(cls, name, bases, attrs)
         attrs["name"] = name
-        if name != "ModuleBase":
+        if name != "ModuleBase" and attrs["role"] not in [ModuleRoles.CONTROLLER]:
             assert attrs["role"] != ModuleRoles.UNSPECIFIED, "请指定模块角色"
             print(f"Registering module {name}")
-            modules[attrs["role"]] = new_class
+            module_classes[attrs["role"]].append(new_class)
         return new_class
 
 ModuleType = ModuleManager
 
-modules: dict[ModuleRoles, ModuleType] = {}
+module_classes: dict[ModuleRoles, list[ModuleType]] = {
+    role: [] for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
+}
 
 class ModuleBase(metaclass=ModuleManager):
     role: ModuleRoles = ModuleRoles.UNSPECIFIED

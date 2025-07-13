@@ -10,6 +10,7 @@ from ..modules import ModuleRoles, ModuleBase
 from ..messages import ASRMessage, ASRActivated
 
 class ASRSherpa(ModuleBase):
+    role: ModuleRoles = ModuleRoles.ASR
     def __init__(self, config: Config):
         super().__init__(config)
         self.recognizer = create_recognizer(config.asr.sherpa)

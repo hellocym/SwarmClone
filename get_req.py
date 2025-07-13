@@ -3,6 +3,8 @@ import subprocess
 import os
 from swarmclone import __version__
 
+raise Exception("Deprecated!")
+
 requirements = {
     "pip": {
         "general": [

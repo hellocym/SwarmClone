@@ -13,21 +13,32 @@
 - 见“总技术路线”
 
 ## 如何开始？
-您需要安装最新版本的Anaconda，然后打开`Anaconda Prompt`，并运行以下命令：
-
+您需要安装Python3.10和[uv](https://docs.astral.sh/uv/)：
 ```console
-$ conda create -n swarmclone python=3.10.6
-$ conda activate swarmclone
+$ pip install uv
 ```
-
-然后切换到项目的根目录，并运行以下命令：
-
+随后安装torch以及torchaudio：
+```
+$ UV_TORCH_BACKEND=auto uv pip install torch
+```
+最后安装剩余依赖：
 ```console
-$ python get_req.py
+uv sync
 ```
-
-如果遇到网络问题，请尝试使用国内镜像源或代理。
-
+若需要使用tts功能，你需要根据你的操作系统安装不同的依赖：
+- Windows：
+```console
+>pip sync --group tts_windows
+```
+- Linux：
+```console
+$ pip sync --group tts_linux
+```
+若需要使用qqbot功能，你还需要安装`ncatbot`：
+```console
+$ pip install ncatbot
+```
+注意此处使用pip是因为ncatbot与其他依赖有冲突，若后续使用出现问题请发issue。
 
 ## 如何参与开发？
 - 您可以加入我们的开发QQ群：1017493942

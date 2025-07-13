@@ -7,11 +7,13 @@ from .llm_transformers import LLMTransformers
 from .llm_api import LLMOpenAI
 from .bilibili_chat import BiliBiliChat
 from .asr import ASRSherpa
+from .plugins import *
 from .ncatbot_modules import *
 
 if __name__ == "__main__":
     ## TODO：从命令行接收配置文件、模块列表等参数
     controller = Controller(config=Config())
+    controller.register_module(ScheduledPlaylist)
     # controller.register_module(FrontendDummy)                # 只打印log到终端
     # controller.register_module(FrontendSocket)  # 使用Socket与swarmcloneunity配套
     # controller.register_module(LLMOpenAI)       # 使用OpenAI API比如DeepSeek就用这个

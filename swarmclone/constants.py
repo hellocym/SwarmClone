@@ -20,6 +20,9 @@ class ModuleRoles(Enum):
     # 主控（并非模块，但是为了向其他模块发送消息，必须要有角色）
     CONTROLLER = "Controller"
 
+    # 未指定（仅用于基类，任何未指定角色的模块在注册时都会引发错误）
+    UNSPECIFIED = "Unspecified"
+
 class LLMState(Enum):
     IDLE = "Idle"
     GENERATING = "Generating"

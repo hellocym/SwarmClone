@@ -6,17 +6,21 @@ import asyncio
 class ModuleManager(type):
     def __new__(cls, name: str, bases: tuple[type, ...], attrs: dict[str, Any]):
         new_class = super().__new__(cls, name, bases, attrs)
+        attrs["name"] = name
         if name != "ModuleBase":
+            assert attrs["role"] != ModuleRoles.UNSPECIFIED, "请指定模块角色"
             print(f"Registering module {name}")
-            modules[name] = new_class
+            modules[attrs["role"]] = new_class
         return new_class
 
-modules: dict[str, ModuleManager] = {}
+ModuleType = ModuleManager
+
+modules: dict[ModuleRoles, ModuleType] = {}
 
 class ModuleBase(metaclass=ModuleManager):
-    def __init__(self, module_role: ModuleRoles, name: str, config: Config):
-        self.name: str = name
-        self.role: ModuleRoles = module_role
+    role: ModuleRoles = ModuleRoles.UNSPECIFIED
+    name: str = "ModuleBase" # 会由metaclass自动赋值为类名
+    def __init__(self, config: Config):
         self.task_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.results_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.config: Config = config

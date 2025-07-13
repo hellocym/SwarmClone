@@ -6,8 +6,9 @@ from time import time
 from json import load
 import os
 class ScheduledPlaylist(ModuleBase):
+    role: ModuleRoles = ModuleRoles.PLUGIN
     def __init__(self, config: Config):
-        super().__init__(ModuleRoles.PLUGIN, "ScheduledPlaylist", config)
+        super().__init__(config)
         assert isinstance((playlist_path := config.playlist.path), str)
         playlist_path = os.path.expanduser(playlist_path)
         assert os.path.exists(playlist_path), f"Playlist path does not exist: {playlist_path}"

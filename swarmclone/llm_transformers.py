@@ -38,8 +38,9 @@ def split_text(s: str, separators: str="。？！～.?!~\n\r") -> list[str]: # B
     return result
 
 class LLMTransformers(LLMBase):
+    role: ModuleRoles = ModuleRoles.LLM
     def __init__(self, config: Config):
-        super().__init__("LLMTransformers", config)
+        super().__init__(config)
         assert isinstance((llm_model_path := config.llm.main_model.model_path), str)
         assert isinstance((classifier_model_path := config.llm.emotionclassification.model_path), str)
         assert isinstance((stop_string := config.llm.main_model.stop_string), str)

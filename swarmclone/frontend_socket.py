@@ -3,12 +3,13 @@ import json
 import base64
 from typing import Any
 from .config import Config
-from .modules import ModuleRoles, ModuleBase
+from .modules import ModuleBase
 from .messages import *
 
 class FrontendSocket(ModuleBase):
+    role: ModuleRoles = ModuleRoles.FRONTEND
     def __init__(self, config: Config):
-        super().__init__(ModuleRoles.FRONTEND, "FrontendSocket", config)
+        super().__init__(config)
         self.clientdict: dict[int, asyncio.StreamWriter] = {}
         self.server: asyncio.Server | None = None
 

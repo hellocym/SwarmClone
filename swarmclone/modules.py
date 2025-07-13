@@ -10,8 +10,9 @@ from .config import Config
 from .module_manager import ModuleBase
 
 class LLMBase(ModuleBase):
-    def __init__(self, name: str, config: Config):
-        super().__init__(ModuleRoles.LLM, name, config)
+    role: ModuleRoles = ModuleRoles.LLM
+    def __init__(self, config: Config):
+        super().__init__(config)
         self.state: LLMState = LLMState.IDLE
         self.history: list[dict[str, str]] = []
         self.generated_text: str = ""
@@ -207,8 +208,9 @@ class LLMBase(ModuleBase):
         yield str(""), {"like": 0., "disgust": 0., "anger": 0., "happy": 0., "sad": 0., "neutral": 1.}
 
 class LLMDummy(LLMBase):
+    role: ModuleRoles = ModuleRoles.LLM
     def __init__(self, config: Config):
-        super().__init__("LLMDummy", config)
+        super().__init__(config)
 
     async def iter_sentences_emotions(self):
         sentences = ["This is a test sentence.", f"I received user prompt {self.history[-1]['content']}"]
@@ -216,8 +218,9 @@ class LLMDummy(LLMBase):
             yield sentence, {'like': 0, 'disgust': 0, 'anger': 0, 'happy': 0, 'sad': 0, 'neutral': 1.}
 
 class FrontendDummy(ModuleBase):
+    role: ModuleRoles = ModuleRoles.FRONTEND
     def __init__(self, config: Config):
-        super().__init__(ModuleRoles.FRONTEND, "FrontendDummy", config)
+        super().__init__(config)
 
     async def process_task(self, task: Message | None) -> Message | None:
         if task is not None:
@@ -225,6 +228,5 @@ class FrontendDummy(ModuleBase):
         return None
 
 class ControllerDummy(ModuleBase):
+    role: ModuleRoles = ModuleRoles.CONTROLLER
     """给Controller直接发送消息用的马甲，没有实际功能"""
-    def __init__(self, config: Config):
-        super().__init__(ModuleRoles.CONTROLLER, "ControllerDummy", config)

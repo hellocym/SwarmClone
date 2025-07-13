@@ -44,13 +44,15 @@ class Controller:
         """
         assert self.config is not None, "请先加载配置"
         module = module_class(**kwargs, config=self.config)
-        assert module.role in self.modules, "不明的模块类型"
         match module.role:
             case ModuleRoles.LLM:
                 if len(self.modules[module.role]) > 0:
                     raise RuntimeError("只能注册一个LLM模块")
+            case ModuleRoles.UNSPECIFIED:
+                raise ValueError("请指定模块类型")
             case _:
                 pass
+        assert module.role in self.modules, "不明的模块类型"
         self.modules[module.role].append(module)
     
     def clear_modules(self):

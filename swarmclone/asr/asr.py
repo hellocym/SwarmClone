@@ -11,7 +11,7 @@ from ..messages import ASRMessage, ASRActivated
 
 class ASRSherpa(ModuleBase):
     def __init__(self, config: Config):
-        super().__init__(ModuleRoles.ASR, "ASRsherpa", config)
+        super().__init__(config)
         self.recognizer = create_recognizer(config.asr.sherpa)
         self.stream = self.recognizer.create_stream()
         self.sample_rate = 16000

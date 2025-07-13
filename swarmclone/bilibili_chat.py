@@ -3,13 +3,15 @@ from .modules import ModuleRoles, ModuleBase
 from .messages import *
 
 class BiliBiliChat(ModuleBase):
+    role: ModuleRoles = ModuleRoles.CHAT
     def __init__(self, config: Config):
+        super().__init__(config)
         try:
             from bilibili_api import live, Credential
         except ImportError:
             raise ImportError("请安装bilibili-api-python")
 
-        super().__init__(ModuleRoles.CHAT, "BiliBiliChat", config)
+        super().__init__(config)
         assert isinstance((sessdata := config.chat.bilibili.credential.sessdata), str)
         assert isinstance((bili_jct := config.chat.bilibili.credential.bili_jct), str)
         assert isinstance((buvid3 := config.chat.bilibili.credential.buvid3), str)

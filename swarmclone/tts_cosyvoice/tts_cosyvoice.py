@@ -55,8 +55,9 @@ def init_tts(config: Config):
     return cosyvoice_sft, cosyvoice_ins
 
 class TTSCosyvoice(ModuleBase):
+    role: ModuleRoles = ModuleRoles.TTS
     def __init__(self, config: Config):
-        super().__init__(ModuleRoles.TTS, "TTSCosyvoice", config)
+        super().__init__(config)
         self.cosyvoice_models = init_tts(config)
         self.processed_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
 

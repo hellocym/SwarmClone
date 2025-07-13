@@ -14,10 +14,11 @@ import random
 
 
 class NCatBotChat(ModuleBase):
+    role: ModuleRoles = ModuleRoles.CHAT
     """从NCatBot获取消息并作为Chat信息发送给主控"""
     def __init__(self, config: Config):
         assert available, "NCatBotChat requires ncatbot to be installed"
-        super().__init__(ModuleRoles.CHAT, "NCatBotChat", config)
+        super().__init__(config)
         lock = Lock()
         lock.acquire()
         self.bot = BotClient()
@@ -71,9 +72,10 @@ class NCatBotChat(ModuleBase):
             text = ""
 
 class NCatBotFrontend(ModuleBase):
+    role: ModuleRoles = ModuleRoles.FRONTEND
     """接受LLM的信息并发送到目标群中"""
     def __init__(self, config: Config):
-        super().__init__(ModuleRoles.FRONTEND, "NCatBotFrontend", config)
+        super().__init__(config)
         self.llm_buffer = ""
     
     async def process_task(self, task: Message | None) -> Message | None:

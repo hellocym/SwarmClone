@@ -10,18 +10,17 @@ from ..messages import ASRMessage, ASRActivated
 
 @dataclass
 class ASRSherpaConfig(ModuleConfig):
-    host: str = field(default="0.0.0.0")
-    port: int = field(default=8004)
-    userdb: dict[str, str] = field(default_factory=lambda : {"DeveloperA": "12345"})
-    model: str = field(default="zipformer")
-    quantized: str = field(default="fp32")
-    model_path: str = field(default="~/.swarmclone/asr/")
-    decoding_method: str = field(default="greedy_search")
-    provider: str = field(default="cpu")
-    hotwords_file: str = field(default="")
-    hotwords_score: float = field(default=1.5)
-    blank_penalty: float = field(default=0.0)
-    vadmodel_path: str = field(default="~/.swarmclone/vad/")
+    host: str = field(default="0.0.0.0", metadata={"required": False, "desc": "监听地址，默认监听所有地址，如需仅监听本地地址则设置为127.0.0.1"})
+    port: int = field(default=8004, metadata={"required": False, "desc": "监听端口，默认8004"})
+    userdb: dict[str, str] = field(default_factory=lambda : {"DeveloperA": "12345"}, metadata={"required": False, "desc": "用户名以及密码"})
+    model: str = field(default="zipformer", metadata={"required": False, "desc": "语音识别模型id"})
+    quantized: str = field(default="fp32", metadata={"required": False, "desc": "语音识别模型精度"})
+    model_path: str = field(default="~/.swarmclone/asr/", metadata={"required": False, "desc": "语音识别模型位置"})
+    decoding_method: str = field(default="greedy_search", metadata={"required": False, "desc": "解码方式，支持greedy_search和beam_search"})
+    provider: str = field(default="cpu", metadata={"required": False, "desc": "语音识别设备，支持cpu和cuda"})
+    hotwords_file: str = field(default="", metadata={"required": False, "desc": "热词文件路径"})
+    hotwords_score: float = field(default=1.5, metadata={"required": False, "desc": "热词分数"})
+    blank_penalty: float = field(default=0.0, metadata={"required": False, "desc": "空白惩罚"})
 
 class ASRSherpa(ModuleBase):
     role: ModuleRoles = ModuleRoles.ASR

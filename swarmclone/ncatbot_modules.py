@@ -14,9 +14,9 @@ import random
 
 @dataclass
 class NCatBotChatConfig(ModuleConfig):
-    target_group_id: str = field(default="")
-    bot_id: str = field(default="")
-    root_id: str = field(default="")
+    target_group_id: str = field(default="", metadata={"required": True, "desc": "模板群号"})
+    bot_id: str = field(default="", metadata={"required": True, "desc": "机器人QQ号"})
+    root_id: str = field(default="", metadata={"required": True, "desc": "管理员QQ号"})
 
 class NCatBotChat(ModuleBase):
     role: ModuleRoles = ModuleRoles.CHAT
@@ -76,7 +76,7 @@ class NCatBotChat(ModuleBase):
             text = ""
 
 class NCatBotFrontendConfig(ModuleConfig):
-    sleep_range: tuple[float, float] = (0.1, 0.5)
+    sleep_range: tuple[float, float] = field(default=(0.5, 1.5), metadata={"required": False, "desc": "模型回复随机延迟范围"})
 
 class NCatBotFrontend(ModuleBase):
     role: ModuleRoles = ModuleRoles.FRONTEND

@@ -18,13 +18,13 @@ from .utils import *
 
 @dataclass
 class LLMOpenAIConfig(LLMBaseConfig):
-    classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM")
-    classifier_model_id: str = field(default="MomoiaMoia/SWCBiLSTM")
-    classifier_model_source: str = field(default="modelscope")
-    model_id: str = field(default="")
-    model_url: str = field(default="")
-    api_key: str = field(default="")
-    temperature: float = field(default=0.7)
+    classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM", metadata={"required": False, "desc": "情感分类模型路径"})
+    classifier_model_id: str = field(default="MomoiaMoia/SWCBiLSTM", metadata={"required": False, "desc": "情感分类模型id"})
+    classifier_model_source: str = field(default="modelscope", metadata={"required": False, "desc": "情感分类模型来源，仅支持huggingface或modelscope"})
+    model_id: str = field(default="", metadata={"required": True, "desc": "模型id"})
+    model_url: str = field(default="", metadata={"required": True, "desc": "模型api网址"})
+    api_key: str = field(default="", metadata={"required": True, "desc": "api key"})
+    temperature: float = field(default=0.7, metadata={"required": False, "desc": "模型温度"})
 
 class LLMOpenAI(LLMBase):
     role: ModuleRoles = ModuleRoles.LLM
@@ -62,7 +62,7 @@ class LLMOpenAI(LLMBase):
         
         self.model_id = self.config.model_id
         self.client = openai.AsyncOpenAI(
-            api_key=api_key,
+            api_key=self.config.api_key,
             base_url=self.config.model_url
         )
         self.temperature = self.config.temperature

@@ -11,16 +11,16 @@ from .module_manager import *
 
 @dataclass
 class LLMBaseConfig(ModuleConfig):
-    chat_maxsize: int = field(default=20)
-    chat_size_threshold: int = field(default=10)
-    idle_timeout: int | float = field(default=float("inf"))
-    asr_timeout: int = field(default=60)
-    tts_timeout: int = field(default=60)
-    chat_role: str = field(default="user")
-    asr_role: str = field(default="user")
-    chat_template: str = field(default="{user}: {content}")
-    asr_template: str = field(default="{user}: {content}")
-    system_prompt: str = field(default="""你是一只猫娘""")  # TODO：更好的系统提示、MCP支持
+    chat_maxsize: int = field(default=20, metadata={"required": False, "desc": "弹幕接受数量上限"})
+    chat_size_threshold: int = field(default=10, metadata={"required": False, "desc": "弹幕逐条回复数量上限"})
+    idle_timeout: int | float = field(default=float("inf"), metadata={"required": False, "desc": "自动发起对话时间间隔"})
+    asr_timeout: int = field(default=60, metadata={"required": False, "desc": "语音识别超时时间"})
+    tts_timeout: int = field(default=60, metadata={"required": False, "desc": "语音合成超时时间"})
+    chat_role: str = field(default="user", metadata={"required": False, "desc": "弹幕对应的聊天角色"})
+    asr_role: str = field(default="user", metadata={"required": False, "desc": "语音输入对应的聊天角色"})
+    chat_template: str = field(default="{user}: {content}", metadata={"required": False, "desc": "弹幕的提示词模板"})
+    asr_template: str = field(default="{user}: {content}", metadata={"required": False, "desc": "语音输入提示词模板"})
+    system_prompt: str = field(default="""你是一只猫娘""", metadata={"required": False, "desc": "系统提示词"})  # TODO：更好的系统提示、MCP支持
 
 class LLMBase(ModuleBase):
     role: ModuleRoles = ModuleRoles.LLM

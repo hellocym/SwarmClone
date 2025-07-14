@@ -9,8 +9,8 @@ from .messages import *
 @dataclass
 class FrontendSocketConfig:
     host: str = field(default="0.0.0.0", metadata={"required": False, "desc": "监听地址，默认监听所有地址，如需仅监听本地地址则设置为127.0.0.1"})
-    port: int = field(default=8002)
-    sep: str = field(default="%SEP%")
+    port: int = field(default=8002, metadata={"required": False, "desc": "监听端口，最好不要改"})
+    sep: str = field(default="%SEP%", metadata={"required": False, "desc": "消息分隔符，最好不要改"})
 
 class FrontendSocket(ModuleBase):
     """连接到Unity前端的接口模块"""

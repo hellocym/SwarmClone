@@ -27,11 +27,11 @@ is_linux = sys.platform.startswith("linux")
 
 @dataclass
 class TTSCosyvoiceConfig(ModuleConfig):
-    sft_model: str = field(default="CosyVoice-300M-SFT")
-    ins_model: str = field(default="CosyVoice-300M-Instruct")
-    tune: str = field(default="知络_1.2")
-    model_path: str = field(default="~/.swarmclone/tts_cosy_voice")
-    float16: bool = field(default=True)
+    sft_model: str = field(default="CosyVoice-300M-SFT", metadata={"required": False, "desc": "语音微调模型"})
+    ins_model: str = field(default="CosyVoice-300M-Instruct", metadata={"required": False, "desc": "语音指令模型"})
+    tune: str = field(default="知络_1.2", metadata={"required": False, "desc": "音色"})
+    model_path: str = field(default="~/.swarmclone/tts_cosy_voice", metadata={"required": False, "desc": "语音模型路径"})
+    float16: bool = field(default=True, metadata={"required": False, "desc": "是否启用量化"})
 def init_tts(config: TTSCosyvoiceConfig):
     # TTS Model 初始化
     assert isinstance((model_path := config.model_path), str)

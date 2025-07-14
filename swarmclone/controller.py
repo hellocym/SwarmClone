@@ -32,12 +32,12 @@ class Controller:
             for name, module_config in modules.items():
                 module_class = role_classes[name]
                 module = module_class(**module_config)
-                self.register_module(module)
+                self.add_module(module)
 
-    def register_module(self, module: ModuleBase):
+    def add_module(self, module: ModuleBase):
         """
-        注册模块
-        module_class: 模块
+        添加模块
+        module: 模块
         """
         match module.role:
             case ModuleRoles.LLM:

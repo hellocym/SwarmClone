@@ -39,26 +39,27 @@ def init_tts(config: TTSCosyvoiceConfig):
     assert isinstance((ins_model := config.ins_model), str)
     assert isinstance((fp16 := config.float16), bool)
     full_model_path: str = os.path.expanduser(model_path)
-    try:
-        if is_linux:
-            print(f" * 将使用 {config.ins_model} & {config.sft_model} 进行生成。")
-            cosyvoice_sft = CosyVoice(os.path.join(full_model_path, sft_model), fp16=fp16)
-        else:
-            print(f" * 将使用 {config.ins_model} 进行生成。")
-            cosyvoice_sft = None
-        cosyvoice_ins = CosyVoice(os.path.join(full_model_path, ins_model), fp16=fp16)
-    except Exception as e:
-        err_msg = str(e).lower()
-        if ("file" in err_msg) and ("doesn't" in err_msg) and ("exist" in err_msg):
-            catch = input(" * CosyVoice TTS 发生了错误，这可能是由于模型下载不完全导致的，是否清理缓存TTS模型？[y/n] ")
-            if catch.strip().lower() == "y":
+    tries = 0
+    while True:
+        if tries >= 5:
+            raise RuntimeError("无法加载模型")
+        try:
+            if is_linux:
+                print(f" * 将使用 {config.ins_model} & {config.sft_model} 进行生成。")
+                cosyvoice_sft = CosyVoice(os.path.join(full_model_path, sft_model), fp16=fp16)
+            else:
+                print(f" * 将使用 {config.ins_model} 进行生成。")
+                cosyvoice_sft = None
+            cosyvoice_ins = CosyVoice(os.path.join(full_model_path, ins_model), fp16=fp16)
+            break
+        except Exception as e:
+            err_msg = str(e).lower()
+            if ("file" in err_msg) and ("doesn't" in err_msg) and ("exist" in err_msg):
                 shutil.rmtree(full_model_path, ignore_errors=True)
-                print(" * 清理完成，请重新运行该模块。")
-                sys.exit(0)
+                tries += 1
+                continue
             else:
                 raise
-        else:
-            raise
     
     return cosyvoice_sft, cosyvoice_ins
 

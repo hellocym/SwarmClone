@@ -35,10 +35,10 @@ class LLMTransformers(LLMBase):
         self.config = self.config_class(**kwargs) if config is None else config
         self.stop_string = self.config.stop_string
 
-        successful = False
         abs_model_path = os.path.expanduser(self.config.model_path)
         abs_classifier_path = os.path.expanduser(self.config.classifier_model_path)
-        while not successful: # 加载大语言模型
+        tries = 0
+        while True: # 加载大语言模型
             try:
                 print(f"正在从{abs_model_path}加载语言模型……")
                 model = AutoModelForCausalLM.from_pretrained(
@@ -51,17 +51,19 @@ class LLMTransformers(LLMBase):
                     padding_side="left",
                     trust_remote_code=True
                 )
-                successful = True
                 self.model = model
                 self.tokenizer = tokenizer  # 移除类型注解以兼容所有使用场景
-            except Exception as e:
-                print(e)
-                choice = input("加载模型失败，是否下载模型？(Y/n)")
-                if choice.lower() != "n":
-                    download_model(self.config.model_id, self.config.model_source, abs_model_path)
+                break
+            except Exception:
+                tries += 1
+                if tries > 5:
+                    raise
+                download_model(self.config.model_id, self.config.model_source, abs_model_path)
 
-        successful = False
-        while not successful: # 加载情感分类模型
+        tries = 0
+        while True: # 加载情感分类模型
+            if tries > 5:
+                raise Exception("模型加载失败")
             try:
                 print(f"正在从{abs_classifier_path}加载情感分类模型……")
                 classifier_model = AutoModelForSequenceClassification.from_pretrained(
@@ -74,18 +76,18 @@ class LLMTransformers(LLMBase):
                     padding_side="left",
                     trust_remote_code=True
                 )
-                successful = True
                 self.classifier_model = classifier_model
                 self.classifier_tokenizer = classifier_tokenizer
-            except Exception as e:
-                print(e)
-                choice = input("加载模型失败，是否下载模型？(Y/n)")
-                if choice.lower() != "n":
-                    download_model(
-                        self.config.classifier_model_id,
-                        self.config.classifier_model_source,
-                        abs_classifier_path
-                    )
+                break
+            except Exception:
+                tries += 1
+                if tries > 5:
+                    raise
+                download_model(
+                    self.config.classifier_model_id,
+                    self.config.classifier_model_source,
+                    abs_classifier_path
+                )
         
         self.device: str = self.config.device
         self.temperature: float = self.config.temperature

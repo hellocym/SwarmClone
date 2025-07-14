@@ -50,15 +50,12 @@ class LLMOpenAI(LLMBase):
                 successful = True
                 self.classifier_model = classifier_model
                 self.classifier_tokenizer = classifier_tokenizer
-            except Exception as e:
-                print(e)
-                choice = input("加载模型失败，是否下载模型？(Y/n)")
-                if choice.lower() != "n":
-                    download_model(
-                        self.config.classifier_model_id,
-                        self.config.classifier_model_source,
-                        abs_classifier_path
-                    )
+            except Exception:
+                download_model(
+                    self.config.classifier_model_id,
+                    self.config.classifier_model_source,
+                    abs_classifier_path
+                )
         
         self.model_id = self.config.model_id
         self.client = openai.AsyncOpenAI(

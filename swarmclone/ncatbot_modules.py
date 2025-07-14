@@ -5,30 +5,34 @@ try:
 except ImportError:
     available = False
 from threading import Lock
+from dataclasses import dataclass, field
 from .constants import *
 from .messages import *
 from .modules import *
-from .config import Config
 import asyncio
 import random
 
+@dataclass
+class NCatBotChatConfig(ModuleConfig):
+    target_group_id: str = field(default="")
+    bot_id: str = field(default="")
+    root_id: str = field(default="")
 
 class NCatBotChat(ModuleBase):
     role: ModuleRoles = ModuleRoles.CHAT
+    config_class = NCatBotChatConfig
     """从NCatBot获取消息并作为Chat信息发送给主控"""
-    def __init__(self, config: Config):
+    def __init__(self, config: NCatBotChatConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
         assert available, "NCatBotChat requires ncatbot to be installed"
-        super().__init__(config)
         lock = Lock()
         lock.acquire()
         self.bot = BotClient()
-        assert isinstance((target_group_id := config.chat.ncatbot.target_group_id), str)
-        self.target_group_id = target_group_id
-        assert isinstance((bot_id := config.chat.ncatbot.bot_id), str)
-        self.bot_id = bot_id
-        assert isinstance((root_id := config.chat.ncatbot.root_id), str)
-        self.root_id = root_id
-        self.api = self.bot.run_blocking(bt_uin=bot_id, root=root_id)
+        self.target_group_id = self.config.target_group_id
+        self.bot_id = self.config.bot_id
+        self.root_id = self.config.root_id
+        self.api = self.bot.run_blocking(bt_uin=self.bot_id, root=self.root_id)
 
         # 注册回调事件
         self.bot.add_group_event_handler(self.on_group_msg)
@@ -71,18 +75,26 @@ class NCatBotChat(ModuleBase):
             await self.results_queue.put(message)
             text = ""
 
+class NCatBotFrontendConfig(ModuleConfig):
+    sleep_range: tuple[float, float] = (0.1, 0.5)
+
 class NCatBotFrontend(ModuleBase):
     role: ModuleRoles = ModuleRoles.FRONTEND
+    config_class = NCatBotFrontendConfig
     """接受LLM的信息并发送到目标群中"""
-    def __init__(self, config: Config):
-        super().__init__(config)
+    def __init__(self, config: NCatBotFrontendConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
         self.llm_buffer = ""
+    
+    def get_sleep_time(self) -> float:
+        return random.random() * (self.config.sleep_range[1] - self.config.sleep_range[0]) + self.config.sleep_range[0]
     
     async def process_task(self, task: Message | None) -> Message | None:
         if isinstance(task, LLMMessage):
             self.llm_buffer += task.get_value(self).get("content", "")
         elif isinstance(task, LLMEOS) and self.llm_buffer:
-            await asyncio.sleep(random.choice([0.1, 0.5, 0.7])) # 防止被发现是机器人然后封号
+            await asyncio.sleep(self.get_sleep_time()) # 防止被发现是机器人然后封号
             await self.results_queue.put(NCatBotLLMMessage(self, self.llm_buffer.strip()))
             await self.results_queue.put(AudioFinished(self)) # 防止LLM等待不存在的TTS
             self.llm_buffer = ""

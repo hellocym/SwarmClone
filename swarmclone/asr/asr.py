@@ -2,29 +2,47 @@ import asyncio
 import numpy as np
 import json
 from typing import Any
-
+from dataclasses import dataclass, field
 
 from .sherpa_asr import create_recognizer
-from ..config import Config
-from ..modules import ModuleRoles, ModuleBase
+from ..modules import *
 from ..messages import ASRMessage, ASRActivated
+
+@dataclass
+class ASRSherpaConfig(ModuleConfig):
+    host: str = field(default="0.0.0.0")
+    port: int = field(default=8004)
+    userdb: dict[str, str] = field(default_factory=lambda : {"DeveloperA": "12345"})
+    model: str = field(default="zipformer")
+    quantized: str = field(default="fp32")
+    model_path: str = field(default="~/.swarmclone/asr/")
+    decoding_method: str = field(default="greedy_search")
+    provider: str = field(default="cpu")
+    hotwords_file: str = field(default="")
+    hotwords_score: float = field(default=1.5)
+    blank_penalty: float = field(default=0.0)
+    vadmodel_path: str = field(default="~/.swarmclone/vad/")
 
 class ASRSherpa(ModuleBase):
     role: ModuleRoles = ModuleRoles.ASR
-    def __init__(self, config: Config):
-        super().__init__(config)
-        self.recognizer = create_recognizer(config.asr.sherpa)
+    config_class = ASRSherpaConfig
+    def __init__(self, config: ASRSherpaConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
+        self.recognizer = create_recognizer(self.config)
         self.stream = self.recognizer.create_stream()
         self.sample_rate = 16000
         self.samples_per_read = int(0.1 * self.sample_rate)
-        self.userdb = config.asr.userdb
+        self.userdb = self.config.userdb
         self.clientdict = {}
         self.server = None
 
     async def run(self):
-        assert isinstance((host := self.config.panel.server.host), str)
-        assert isinstance((port := self.config.asr.port), int)
-        self.server = await asyncio.start_server(self.handle_client, host, port)
+        self.server = await asyncio.start_server(
+            self.handle_client,
+            self.config.host,
+            self.config.port
+        )
         async with self.server:
             await self.server.serve_forever()
 
@@ -35,9 +53,7 @@ class ASRSherpa(ModuleBase):
         except(UnicodeDecodeError):
             print("不是可接受的鉴权信息")
             return None
-        try:
-            password = getattr(self.userdb, checkmessage['name'])
-        except(AttributeError):
+        if (password := self.userdb.get(checkmessage['name'])) is None:
             writer.write('WRUSR\n'.encode('utf-8'))
             await writer.drain()
             writer.close()

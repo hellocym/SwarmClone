@@ -2,6 +2,8 @@
 主控——主控端的核心
 """
 import asyncio
+from typing import Any
+from dataclasses import asdict
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -10,35 +12,33 @@ from fastapi.responses import JSONResponse, HTMLResponse
 
 from .modules import *
 from .constants import *
-from .config import Config
+from .module_manager import module_classes
 
 from . import __version__
 
 class Controller:
-    def __init__(self, config: Config | None = None):
-        self.modules: dict[ModuleRoles, list[ModuleBase]] = {
-            role: [] for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
-        }
+    def __init__(self, config_path: str | None = None):
+        self.clear_modules()
         self.app: FastAPI = FastAPI(title="Zhiluo Controller")
         self.register_routes()
-        self.load(config or Config())
         self.module_tasks: list[asyncio.Task[Any]] = []
         self.handler_tasks: list[asyncio.Task[Any]] = []
+        self.agent: ModuleBase = ControllerDummy()
     
-    def load(self, config: Config):
-        self.config: Config = config
-        for (_, modules) in self.modules.items():
-            for module in modules:
-                module.config = config
+    def load_config_from_dict(self, config: dict[str, dict[str, dict[str, Any]]]):
+        self.clear_modules()
+        for role_value, modules in config.items():
+            role_classes = module_classes[ModuleRoles(role_value)]
+            for name, module_config in modules.items():
+                module_class = role_classes[name]
+                module = module_class(**module_config)
+                self.register_module(module)
 
-    def register_module(self, module_class: ModuleType, **kwargs: Any):
+    def register_module(self, module: ModuleBase):
         """
         注册模块
-        module_class: 模块类
-        **kwargs: 模块类的构造函数参数，不需要config参数，其会由Controller自动传递
+        module_class: 模块
         """
-        assert self.config is not None, "请先加载配置"
-        module = module_class(**kwargs, config=self.config)
         match module.role:
             case ModuleRoles.LLM:
                 if len(self.modules[module.role]) > 0:
@@ -52,12 +52,7 @@ class Controller:
     
     def clear_modules(self):
         self.modules: dict[ModuleRoles, list[ModuleBase]] = {
-            ModuleRoles.ASR: [],
-            ModuleRoles.CHAT: [],
-            ModuleRoles.FRONTEND: [],
-            ModuleRoles.LLM: [],
-            ModuleRoles.PLUGIN: [],
-            ModuleRoles.TTS: [],
+            role: [] for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
         }
 
     def register_routes(self):
@@ -93,9 +88,9 @@ class Controller:
             module = data.get("module")
             
             if module == ModuleRoles.ASR.value:
-                await self.handle_message(ASRActivated(ControllerDummy(self.config)))
+                await self.handle_message(ASRActivated(self.agent))
                 message = ASRMessage(
-                    source=ControllerDummy(self.config),
+                    source=self.agent,
                     speaker_name=data.get("speaker_name"),
                     message=data.get("content")
                 )
@@ -162,3 +157,8 @@ class Controller:
         while True:
             result: Message = await module.results_queue.get()
             await self.handle_message(result)
+    
+    def save_as_dict(self) -> dict[str, dict[str, dict[str, Any]]]:
+        return {
+            role.value: {module.name: asdict(module.config) for module in modules} for role, modules in self.modules.items()
+        }

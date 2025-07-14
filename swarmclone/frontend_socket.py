@@ -2,25 +2,32 @@ import asyncio
 import json
 import base64
 from typing import Any
-from .config import Config
+from dataclasses import dataclass, field
 from .modules import ModuleBase
 from .messages import *
 
+@dataclass
+class FrontendSocketConfig:
+    host: str = field(default="0.0.0.0", metadata={"required": False, "desc": "监听地址，默认监听所有地址，如需仅监听本地地址则设置为127.0.0.1"})
+    port: int = field(default=8002)
+    sep: str = field(default="%SEP%")
+
 class FrontendSocket(ModuleBase):
+    """连接到Unity前端的接口模块"""
     role: ModuleRoles = ModuleRoles.FRONTEND
-    def __init__(self, config: Config):
-        super().__init__(config)
+    config_class = FrontendSocketConfig
+    def __init__(self, config: FrontendSocketConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
         self.clientdict: dict[int, asyncio.StreamWriter] = {}
         self.server: asyncio.Server | None = None
 
     async def run(self):
-        assert isinstance((host := self.config.panel.server.host), str)
-        assert isinstance((port := self.config.panel.frontend.port), int)
         loop = asyncio.get_running_loop()
         self.server = await asyncio.start_server(
             self.handle_client,
-            host, 
-            port
+            self.config.host,
+            port=self.config.port
         )
         loop.create_task(self.send_to_frontend())
         async with self.server:
@@ -66,9 +73,8 @@ class FrontendSocket(ModuleBase):
         if isinstance(task, TTSAlignedAudio):
             assert isinstance(d["data"], bytes)
             d["data"] = base64.b64encode(d["data"]).decode('utf-8')
-        assert isinstance((separator := self.config.panel.server.requests_separator), str)
         massage = (
-            json.dumps(d).replace(separator, "") + # 防止在不应出现的地方出现分隔符
-            separator
+            json.dumps(d).replace(self.config.sep, "") + # 防止在不应出现的地方出现分隔符
+            self.config.sep
         )
         return massage

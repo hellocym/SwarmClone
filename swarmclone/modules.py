@@ -3,16 +3,31 @@ import asyncio
 import time
 import random
 from typing import Any
+from dataclasses import dataclass, field
 from uuid import uuid4
 from .constants import *
 from .messages import *
-from .config import Config
 from .module_manager import *
+
+@dataclass
+class LLMBaseConfig(ModuleConfig):
+    chat_maxsize: int = field(default=20)
+    chat_size_threshold: int = field(default=10)
+    idle_timeout: int | float = field(default=float("inf"))
+    asr_timeout: int = field(default=60)
+    tts_timeout: int = field(default=60)
+    chat_role: str = field(default="user")
+    asr_role: str = field(default="user")
+    chat_template: str = field(default="{user}: {content}")
+    asr_template: str = field(default="{user}: {content}")
+    system_prompt: str = field(default="""你是一只猫娘""")  # TODO：更好的系统提示、MCP支持
 
 class LLMBase(ModuleBase):
     role: ModuleRoles = ModuleRoles.LLM
-    def __init__(self, config: Config):
-        super().__init__(config)
+    config_class = LLMBaseConfig
+    def __init__(self, config: LLMBaseConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
         self.state: LLMState = LLMState.IDLE
         self.history: list[dict[str, str]] = []
         self.generated_text: str = ""
@@ -20,25 +35,21 @@ class LLMBase(ModuleBase):
         self.chat_maxsize: int = 20
         self.chat_size_threshold: int = 10
         self.chat_queue: asyncio.Queue[ChatMessage] = asyncio.Queue(maxsize=self.chat_maxsize)
-        self.asr_timeout: int = 60 # 应该没有人说话一分钟不停
-        self.tts_timeout: int = 60 ## TODO：是否应该加入设置项？
+        self.idle_timeout: int | float = self.config.idle_timeout
+        self.asr_timeout: int = self.config.asr_timeout
+        self.tts_timeout: int = self.config.tts_timeout
         self.idle_start_time: float = time.time()
         self.waiting4asr_start_time: float = time.time()
         self.waiting4tts_start_time: float = time.time()
         self.asr_counter = 0 # 有多少人在说话？
         self.about_to_sing = False # 是否准备播放歌曲？
         self.song_id: str = ""
-        assert isinstance((chat_role := self.config.llm.main_model.chat_role), str)
-        self.chat_role = chat_role
-        assert isinstance((asr_role := self.config.llm.main_model.asr_role), str)
-        self.asr_role = asr_role
-        assert isinstance((chat_template := self.config.llm.main_model.chat_template), str)
-        self.chat_template = chat_template
-        assert isinstance((asr_template := self.config.llm.main_model.asr_template), str)
-        self.asr_template = asr_template
-        assert isinstance((system_prompt := self.config.llm.main_model.system_prompt), str)
-        if system_prompt:
-            self._add_system_history(system_prompt)
+        self.chat_role = self.config.chat_role
+        self.asr_role = self.config.asr_role
+        self.chat_template = self.config.chat_template
+        self.asr_template = self.config.asr_template
+        if self.config.system_prompt:
+            self._add_system_history(self.config.system_prompt)
     
     def _switch_to_generating(self):
         self.state = LLMState.GENERATING
@@ -93,8 +104,6 @@ class LLMBase(ModuleBase):
         ]
    
     async def run(self):
-        assert isinstance((idle_timeout := self.config.llm.idle_time), float | int), idle_timeout
-
         while True:
             try:
                 task = self.task_queue.get_nowait()
@@ -133,7 +142,7 @@ class LLMBase(ModuleBase):
                             self._switch_to_generating()
                         except asyncio.QueueEmpty:
                             pass
-                    elif time.time() - self.idle_start_time > idle_timeout:
+                    elif time.time() - self.idle_start_time > self.idle_timeout:
                         self._add_system_history("请随便说点什么吧！")
                         self._switch_to_generating()
 
@@ -209,8 +218,8 @@ class LLMBase(ModuleBase):
 
 class LLMDummy(LLMBase):
     role: ModuleRoles = ModuleRoles.LLM
-    def __init__(self, config: Config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
 
     async def iter_sentences_emotions(self):
         sentences = ["This is a test sentence.", f"I received user prompt {self.history[-1]['content']}"]
@@ -219,8 +228,8 @@ class LLMDummy(LLMBase):
 
 class FrontendDummy(ModuleBase):
     role: ModuleRoles = ModuleRoles.FRONTEND
-    def __init__(self, config: Config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
 
     async def process_task(self, task: Message | None) -> Message | None:
         if task is not None:

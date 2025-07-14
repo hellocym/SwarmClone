@@ -1,8 +1,8 @@
 import asyncio
-import re
 import os
 import queue
 import torch
+from dataclasses import dataclass, field
 from transformers import (
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
@@ -11,44 +11,33 @@ from transformers import (
     StoppingCriteriaList,
     StopStringCriteria
 )
-from .config import Config
 from .modules import *
 from .messages import *
-from .utils import download_model
+from .utils import *
 
-def split_text(s: str, separators: str="。？！～.?!~\n\r") -> list[str]: # By DeepSeek
-    # 构建正则表达式模式
-    separators_class = ''.join(map(re.escape, separators))
-    pattern = re.compile(rf'([{separators_class}]+)')
-    
-    # 分割并处理结果
-    parts = pattern.split(s)
-    result = []
-    
-    # 合并文本与分隔符（成对处理）
-    for text, delim in zip(parts[::2], parts[1::2]):
-        if (cleaned := (text + delim).lstrip()):
-            result.append(cleaned)
-    
-    # 处理未尾未配对内容（保留后置空格）
-    if len(parts) % 2:
-        if (last_cleaned := parts[-1].lstrip()):
-            result.append(last_cleaned)
-    
-    return result
+@dataclass
+class LLMTransformersConfig(LLMBaseConfig):
+    classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM")
+    classifier_model_id: str = field(default="MomoiaMoia/SWCBiLSTM")
+    classifier_model_source: str = field(default="modelscope")
+    model_path: str = field(default="~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-instruct")
+    model_id: str = field(default="MiniLM2-nGPT-0.4b-instruct")
+    model_source: str = field(default="modelscope")
+    stop_string: str = field(default="\n\n\n")
+    temperature: float = field(default=0.5)
+    device: str = field(default="cuda:0")
 
 class LLMTransformers(LLMBase):
     role: ModuleRoles = ModuleRoles.LLM
-    def __init__(self, config: Config):
-        super().__init__(config)
-        assert isinstance((llm_model_path := config.llm.main_model.model_path), str)
-        assert isinstance((classifier_model_path := config.llm.emotionclassification.model_path), str)
-        assert isinstance((stop_string := config.llm.main_model.stop_string), str)
-        self.stop_string = stop_string
+    config_class = LLMTransformersConfig
+    def __init__(self, config: LLMTransformersConfig | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.config = self.config_class(**kwargs) if config is None else config
+        self.stop_string = self.config.stop_string
 
         successful = False
-        abs_model_path = os.path.expanduser(llm_model_path)
-        abs_classifier_path = os.path.expanduser(classifier_model_path)
+        abs_model_path = os.path.expanduser(self.config.model_path)
+        abs_classifier_path = os.path.expanduser(self.config.classifier_model_path)
         while not successful: # 加载大语言模型
             try:
                 print(f"正在从{abs_model_path}加载语言模型……")
@@ -56,7 +45,7 @@ class LLMTransformers(LLMBase):
                     abs_model_path,
                     torch_dtype="auto",
                     trust_remote_code=True
-                ).to(config.llm.device).bfloat16() # 防止爆内存
+                ).to(self.config.device).bfloat16() # 防止爆内存
                 tokenizer = AutoTokenizer.from_pretrained(
                     abs_model_path,
                     padding_side="left",
@@ -69,9 +58,7 @@ class LLMTransformers(LLMBase):
                 print(e)
                 choice = input("加载模型失败，是否下载模型？(Y/n)")
                 if choice.lower() != "n":
-                    assert isinstance((model_id := config.llm.main_model.model_id), str)
-                    assert isinstance((model_source := config.llm.main_model.model_source), str)
-                    download_model(model_id, model_source, abs_model_path)
+                    download_model(self.config.model_id, self.config.model_source, abs_model_path)
 
         successful = False
         while not successful: # 加载情感分类模型
@@ -94,14 +81,14 @@ class LLMTransformers(LLMBase):
                 print(e)
                 choice = input("加载模型失败，是否下载模型？(Y/n)")
                 if choice.lower() != "n":
-                    assert isinstance((model_id := config.llm.emotionclassification.model_id), str)
-                    assert isinstance((model_source := config.llm.emotionclassification.model_source), str)
-                    download_model(model_id, model_source, abs_classifier_path)
+                    download_model(
+                        self.config.classifier_model_id,
+                        self.config.classifier_model_source,
+                        abs_classifier_path
+                    )
         
-        assert isinstance((device := config.llm.device), str)
-        self.device: str = device
-        assert isinstance((temperature := config.llm.main_model.temperature), float) and temperature >= 0 and temperature <= 1
-        self.temperature = temperature
+        self.device: str = self.config.device
+        self.temperature: float = self.config.temperature
     
     @torch.no_grad()
     async def get_emotion(self, text: str) -> dict[str, float]:

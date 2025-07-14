@@ -1,8 +1,8 @@
 import asyncio
-import re
 import os
 import torch
 import openai
+from dataclasses import dataclass, field
 from openai.types.chat import (
     ChatCompletionUserMessageParam,
     ChatCompletionAssistantMessageParam,
@@ -12,41 +12,27 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
-from .config import Config
 from .modules import *
 from .messages import *
-from .utils import download_model
+from .utils import *
 
-def split_text(s: str, separators: str="。？！～.?!~\n\r") -> list[str]: # By DeepSeek
-    # 构建正则表达式模式
-    separators_class = ''.join(map(re.escape, separators))
-    pattern = re.compile(rf'([{separators_class}]+)')
-    
-    # 分割并处理结果
-    parts = pattern.split(s)
-    result = []
-    
-    # 合并文本与分隔符（成对处理）
-    for text, delim in zip(parts[::2], parts[1::2]):
-        if (cleaned := (text + delim).lstrip()):
-            result.append(cleaned)
-    
-    # 处理未尾未配对内容（保留后置空格）
-    if len(parts) % 2:
-        if (last_cleaned := parts[-1].lstrip()):
-            result.append(last_cleaned)
-    
-    return result
+@dataclass
+class LLMOpenAIConfig(LLMBaseConfig):
+    classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM")
+    classifier_model_id: str = field(default="MomoiaMoia/SWCBiLSTM")
+    classifier_model_source: str = field(default="modelscope")
+    model_id: str = field(default="")
+    model_url: str = field(default="")
+    api_key: str = field(default="")
+    temperature: float = field(default=0.7)
 
 class LLMOpenAI(LLMBase):
     role: ModuleRoles = ModuleRoles.LLM
-    def __init__(self, config: Config):
-        super().__init__(config)
-        assert isinstance((classifier_model_path := config.llm.emotionclassification.model_path), str)
-        assert isinstance((stop_string := config.llm.main_model.stop_string), str)
-        self.stop_string = stop_string
-
-        abs_classifier_path = os.path.expanduser(classifier_model_path)
+    config_class = LLMOpenAIConfig
+    def __init__(self, config: LLMOpenAIConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
+        abs_classifier_path = os.path.expanduser(self.config.classifier_model_path)
         successful = False
         while not successful: # 加载情感分类模型
             try:
@@ -68,22 +54,18 @@ class LLMOpenAI(LLMBase):
                 print(e)
                 choice = input("加载模型失败，是否下载模型？(Y/n)")
                 if choice.lower() != "n":
-                    assert isinstance((model_id := config.llm.emotionclassification.model_id), str)
-                    assert isinstance((model_source := config.llm.emotionclassification.model_source), str)
-                    download_model(model_id, model_source, abs_classifier_path)
+                    download_model(
+                        self.config.classifier_model_id,
+                        self.config.classifier_model_source,
+                        abs_classifier_path
+                    )
         
-        assert isinstance((model_id := config.llm.main_model.model_id), str)
-        self.model_id = model_id
-        assert isinstance((model_source := config.llm.main_model.model_source), str)
-        assert model_source.startswith("openai+"), "`LLMOpenAI`只支持使用openai风格API的模型"
-        assert isinstance((api_key := config.llm.main_model.api_key), str) and api_key, "请设置API key"
-        self.url = model_source[7:] # 去掉openai+
+        self.model_id = self.config.model_id
         self.client = openai.AsyncOpenAI(
             api_key=api_key,
-            base_url=self.url
+            base_url=self.config.model_url
         )
-        assert isinstance((temperature := config.llm.main_model.temperature), float) and temperature >= 0 and temperature <= 1
-        self.temperature = temperature
+        self.temperature = self.config.temperature
     
     @torch.no_grad()
     async def get_emotion(self, text: str) -> dict[str, float]:

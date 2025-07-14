@@ -1,32 +1,38 @@
-from .config import Config
-from .modules import ModuleRoles, ModuleBase
+from dataclasses import dataclass, field
+from .modules import *
 from .messages import *
+
+@dataclass
+class BiliBiliChatConfig(ModuleConfig):
+    """live_room_id: int，目标B站直播间ID
+sessdata、bili_jct、buvid3、dedeuserid、ac_time_value: str，见https://nemo2011.github.io/bilibili-api/#/get-credential，可选
+    """
+    live_room_id: int = field(default=0)
+    sessdata: str = field(default="")
+    bili_jct: str = field(default="")
+    buvid3: str = field(default="")
+    dedeuserid: str = field(default="")
+    ac_time_value: str = field(default="")
 
 class BiliBiliChat(ModuleBase):
     role: ModuleRoles = ModuleRoles.CHAT
-    def __init__(self, config: Config):
-        super().__init__(config)
+    config_class = BiliBiliChatConfig
+    def __init__(self, config: BiliBiliChatConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
         try:
             from bilibili_api import live, Credential
         except ImportError:
             raise ImportError("请安装bilibili-api-python")
-
-        super().__init__(config)
-        assert isinstance((sessdata := config.chat.bilibili.credential.sessdata), str)
-        assert isinstance((bili_jct := config.chat.bilibili.credential.bili_jct), str)
-        assert isinstance((buvid3 := config.chat.bilibili.credential.buvid3), str)
-        assert isinstance((dedeuserid := config.chat.bilibili.credential.dedeuserid), str)
-        assert isinstance((ac_time_value := config.chat.bilibili.credential.ac_time_value), str)
-        
+        self.config: BiliBiliChatConfig = BiliBiliChatConfig(**kwargs)
         self.credential: Credential = Credential(
-            sessdata=sessdata or None,
-            bili_jct=bili_jct or None,
-            buvid3=buvid3 or None,
-            dedeuserid=dedeuserid or None,
-            ac_time_value=ac_time_value or None
+            sessdata=self.config.sessdata or None,
+            bili_jct=self.config.bili_jct or None,
+            buvid3=self.config.buvid3 or None,
+            dedeuserid=self.config.dedeuserid or None,
+            ac_time_value=self.config.ac_time_value or None,
         )
-        assert isinstance(config.chat.bilibili.live_room_id, int)
-        self.room: live.LiveDanmaku = live.LiveDanmaku(config.chat.bilibili.live_room_id, credential=self.credential)
+        self.room: live.LiveDanmaku = live.LiveDanmaku(self.config.live_room_id, credential=self.credential)
         self.register_chat()
     
     def register_chat(self):

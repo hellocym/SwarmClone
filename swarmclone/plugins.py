@@ -1,18 +1,21 @@
+from dataclasses import field
+from typing import Any
 from .constants import *
 from .messages import *
 from .modules import *
-
 from time import time
-from json import load
-import os
+
+
+class ScheduledPlaylistConfig(ModuleConfig):
+    playlist: dict[str, dict[str, Any]] = field(default_factory=dict)
+
 class ScheduledPlaylist(ModuleBase):
     role: ModuleRoles = ModuleRoles.PLUGIN
-    def __init__(self, config: Config):
-        super().__init__(config)
-        assert isinstance((playlist_path := config.playlist.path), str)
-        playlist_path = os.path.expanduser(playlist_path)
-        assert os.path.exists(playlist_path), f"Playlist path does not exist: {playlist_path}"
-        self.playlist = load(open(playlist_path))
+    config_class = ScheduledPlaylistConfig
+    def __init__(self, config: ScheduledPlaylistConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
+        self.playlist = self.config.playlist
     
     async def process_task(self, task: Message | None) -> Message | None:
         for song_id, song_info in self.playlist.items():

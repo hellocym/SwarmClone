@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Any
-import sherpa_onnx 
-from ..config import ConfigSection
+from typing import TYPE_CHECKING
+import sherpa_onnx
+if TYPE_CHECKING:
+    from .asr import ASRSherpaConfig
 
 def assert_file_exists(filename: str):
     assert Path(filename).is_file(), (
@@ -11,7 +14,7 @@ def assert_file_exists(filename: str):
         "https://k2-fsa.github.io/sherpa/onnx/pretrained_models/index.html to download it"
     )
 
-def create_recognizer(asr_config: ConfigSection | Any):
+def create_recognizer(asr_config: ASRSherpaConfig):
     download_models(asr_config)
     assert isinstance((model_path := asr_config.model_path), str)
     if asr_config.model == "paraformer":
@@ -94,7 +97,7 @@ def create_recognizer(asr_config: ConfigSection | Any):
 
     return recognizer
 
-def download_models(asr_config: ConfigSection | Any):
+def download_models(asr_config: ASRSherpaConfig):
     """
     下载模型、解压模型
     """
@@ -120,7 +123,7 @@ def download_models(asr_config: ConfigSection | Any):
         model_url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2"
         model_file = model_path / "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2"
     else:
-        print(f"Model {asr_config.model} not supported")
+        print(f"Model {asr_config.model} not supported. Supported models are: zipformer, paraformer.")
         raise NotImplementedError
     
     if not model_file.is_file():

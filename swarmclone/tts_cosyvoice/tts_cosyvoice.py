@@ -4,18 +4,18 @@ import warnings
 import shutil
 import tempfile
 import asyncio
-from time import time
+from dataclasses import dataclass, field
 
 import torch
 import torchaudio
 import jieba
 
-from ..config import Config
-from ..modules import ModuleRoles, ModuleBase
+from ..modules import *
 from ..messages import *
 
 from cosyvoice.cli.cosyvoice import CosyVoice 
 from .funcs import tts_generate
+from time import time # time被某个模块覆盖了
 
 # 忽略警告
 warnings.filterwarnings("ignore", message=".*LoRACompatibleLinear.*")
@@ -24,19 +24,27 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=".*weights_onl
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*weights_norm.*")
 
 is_linux = sys.platform.startswith("linux")
-def init_tts(config: Config):
+
+@dataclass
+class TTSCosyvoiceConfig(ModuleConfig):
+    sft_model: str = field(default="CosyVoice-300M-SFT")
+    ins_model: str = field(default="CosyVoice-300M-Instruct")
+    tune: str = field(default="知络_1.2")
+    model_path: str = field(default="~/.swarmclone/tts_cosy_voice")
+    float16: bool = field(default=True)
+def init_tts(config: TTSCosyvoiceConfig):
     # TTS Model 初始化
-    assert isinstance((model_path := config.tts.cosyvoice.model_path), str)
-    assert isinstance((sft_model := config.tts.cosyvoice.sft_model), str)
-    assert isinstance((ins_model := config.tts.cosyvoice.ins_model), str)
-    assert isinstance((fp16 := config.tts.cosyvoice.float16), bool)
+    assert isinstance((model_path := config.model_path), str)
+    assert isinstance((sft_model := config.sft_model), str)
+    assert isinstance((ins_model := config.ins_model), str)
+    assert isinstance((fp16 := config.float16), bool)
     full_model_path: str = os.path.expanduser(model_path)
     try:
         if is_linux:
-            print(f" * 将使用 {config.tts.cosyvoice.ins_model} & {config.tts.cosyvoice.sft_model} 进行生成。")
+            print(f" * 将使用 {config.ins_model} & {config.sft_model} 进行生成。")
             cosyvoice_sft = CosyVoice(os.path.join(full_model_path, sft_model), fp16=fp16)
         else:
-            print(f" * 将使用 {config.tts.cosyvoice.ins_model} 进行生成。")
+            print(f" * 将使用 {config.ins_model} 进行生成。")
             cosyvoice_sft = None
         cosyvoice_ins = CosyVoice(os.path.join(full_model_path, ins_model), fp16=fp16)
     except Exception as e:
@@ -56,9 +64,11 @@ def init_tts(config: Config):
 
 class TTSCosyvoice(ModuleBase):
     role: ModuleRoles = ModuleRoles.TTS
-    def __init__(self, config: Config):
-        super().__init__(config)
-        self.cosyvoice_models = init_tts(config)
+    config_class = TTSCosyvoiceConfig
+    def __init__(self, config: TTSCosyvoiceConfig | None = None, **kwargs):
+        super().__init__()
+        self.config = self.config_class(**kwargs) if config is None else config
+        self.cosyvoice_models = init_tts(self.config)
         self.processed_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
 
     async def run(self):
@@ -87,7 +97,7 @@ class TTSCosyvoice(ModuleBase):
     @torch.no_grad()
     async def generate_sentence(self, id: str, content: str, emotions: dict[str, float]) -> Message | None:
         try:
-            assert isinstance((tune := self.config.tts.cosyvoice.tune), str)
+            assert isinstance((tune := self.config.tune), str)
             output = await asyncio.to_thread(
                 tts_generate,
                 tts=self.cosyvoice_models,

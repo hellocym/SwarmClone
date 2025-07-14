@@ -1,31 +1,37 @@
-from .config import Config
+from typing import Any
 from .constants import *
 from .messages import *
+from dataclasses import dataclass
 import asyncio
 
 class ModuleManager(type):
     def __new__(cls, name: str, bases: tuple[type, ...], attrs: dict[str, Any]):
-        new_class = super().__new__(cls, name, bases, attrs)
         attrs["name"] = name
+        new_class = super().__new__(cls, name, bases, attrs)
         if name != "ModuleBase" and attrs["role"] not in [ModuleRoles.CONTROLLER]:
             assert attrs["role"] != ModuleRoles.UNSPECIFIED, "请指定模块角色"
             print(f"Registering module {name}")
-            module_classes[attrs["role"]].append(new_class)
+            module_classes[attrs["role"]][name] = new_class
         return new_class
 
 ModuleType = ModuleManager
 
-module_classes: dict[ModuleRoles, list[ModuleType]] = {
-    role: [] for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
+module_classes: dict[ModuleRoles, dict[str, ModuleType]] = {
+    role: {} for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
 }
+
+@dataclass
+class ModuleConfig:
+    """默认配置——没有配置项"""
 
 class ModuleBase(metaclass=ModuleManager):
     role: ModuleRoles = ModuleRoles.UNSPECIFIED
+    config_class = ModuleConfig
     name: str = "ModuleBase" # 会由metaclass自动赋值为类名
-    def __init__(self, config: Config):
+    def __init__(self, config: ModuleConfig | None = None, **kwargs):
+        self.config = self.config_class(**kwargs) if config is None else config
         self.task_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.results_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
-        self.config: Config = config
         self.running = False
     
     async def run(self) -> None:

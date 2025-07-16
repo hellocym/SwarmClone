@@ -1,6 +1,9 @@
 """
 主控——主控端的核心
 """
+from starlette.responses import JSONResponse
+
+
 import asyncio
 from typing import Any
 from dataclasses import asdict, fields, MISSING
@@ -13,6 +16,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from .modules import *
 from .constants import *
 from .module_manager import module_classes
+from .utils import *
 
 from . import __version__
 
@@ -24,15 +28,6 @@ class Controller:
         self.module_tasks: list[asyncio.Task[Any]] = []
         self.handler_tasks: list[asyncio.Task[Any]] = []
         self.agent: ModuleBase = ControllerDummy()
-    
-    def load_config_from_dict(self, config: dict[str, dict[str, dict[str, Any]]]):
-        self.clear_modules()
-        for role_value, modules in config.items():
-            role_classes = module_classes[ModuleRoles(role_value)]
-            for name, module_config in modules.items():
-                module_class = role_classes[name]
-                module = module_class(**module_config)
-                self.add_module(module)
 
     def add_module(self, module: ModuleBase):
         """
@@ -70,8 +65,8 @@ class Controller:
         async def root():
             return HTMLResponse(open("panel/dist/index.html").read())
         
-        @self.app.get("/api/get_config")
-        async def get_config():
+        @self.app.get("/api/get_config", response_class=JSONResponse)
+        async def get_config() -> JSONResponse:
             """
             [
                 {
@@ -127,19 +122,9 @@ class Controller:
                         desc = field.metadata.get("desc", "")
                         options = field.metadata.get("options", [])
                         if field.default is not MISSING and (default := field.default) is not None:
-                            # 保证默认值的类型与配置项的类型一致
-                            if _type == "selection":
-                                try:
-                                    default = options.index(default)
-                                except ValueError:
-                                    default = 0 # 找不到则选第一个
+                            pass
                         elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
-                            # 保证默认值的类型与配置项的类型一致
-                            if _type == "selection":
-                                try:
-                                    default = options.index(default)
-                                except ValueError:
-                                    default = 0 # 找不到则选第一个
+                            pass
                         else: # 无默认值则生成对应类型的空值
                             if _type == "str":
                                 default = ""
@@ -150,7 +135,9 @@ class Controller:
                             elif _type == "bool":
                                 default = False
                             elif _type == "selection":
-                                default = 0 # 选第一个
+                                default = options[0]["value"]
+                        if isinstance(default, str):
+                            default = escape_all(default) # 进行转义
                         config[-1]["modules"][-1]["config"].append({
                             "name": name,
                             "type": _type,
@@ -160,6 +147,54 @@ class Controller:
                             "options": options
                         })
             return JSONResponse(config)
+        
+        @self.app.post("/api/load_config", response_class=JSONResponse)
+        async def load_config(request: Request) -> JSONResponse:
+            """
+            [
+                {
+                    "role_name":【模块角色】,
+                    "modules":[
+                        {
+                            "module_name":【模块名字】
+                            "config":[
+                                {
+                                    "name":【配置项名字】,
+                                    "value":【配置值】
+                                },...
+                            ]
+                        },...
+                    ]
+                },...
+            ]
+            """
+            data = await request.json()
+            self.clear_modules()
+            missing_modules: list[str] = []
+            for role in data:
+                role_name = role["role_name"]
+                role_modules = role["modules"]
+                for module in role_modules:
+                    module_name = module["module_name"]
+                    module_config = module["config"]
+                    try:
+                        module_class = module_classes[ModuleRoles(role_name)][module_name]
+                    except KeyError:
+                        missing_modules.append(module_name)
+                        continue
+                    
+                    # 去转义
+                    for key, value in module_config.items():
+                        if isinstance(value, str):
+                            module_config[key] = unescape_all(value)
+                    try:
+                        module = module_class(**module_config)
+                    except Exception as e:
+                        return JSONResponse({"error": str(e)}, 500)
+                    self.add_module(module)
+            if missing_modules:
+                return JSONResponse(missing_modules, 404)
+            return JSONResponse({"status": "OK"})
 
         @self.app.post("/api")
         async def api(request: Request):
@@ -249,8 +284,3 @@ class Controller:
         while True:
             result: Message = await module.results_queue.get()
             await self.handle_message(result)
-    
-    def save_as_dict(self) -> dict[str, dict[str, dict[str, Any]]]:
-        return {
-            role.value: {module.name: asdict(module.config) for module in modules} for role, modules in self.modules.items()
-        }

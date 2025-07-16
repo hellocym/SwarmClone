@@ -38,3 +38,27 @@ def split_text(s: str, separators: str="。？！～.?!~\n\r") -> list[str]: # B
     
     return result
 
+def escape_all(s: str) -> str: # By Kimi-K2 & Doubao-Seed-1.6
+    # 把非可打印字符（含换行、制表等）统一转成 \xhh 或 \uXXXX
+    def _escape(m: re.Match[str]):
+        c = m.group()
+        # 优先使用简写转义
+        return {
+            '\n': r'\n',
+            '\r': r'\r',
+            '\t': r'\t',
+            '\b': r'\b',
+            '\f': r'\f',
+            '\\': r'\\',
+            '\"': r'\"',
+            '\'': r'\'',
+        }.get(c, c.encode('unicode_escape').decode('ascii'))
+
+    # 预编译正则表达式，匹配非打印字符和特定特殊字符
+    pattern = re.compile(r'([\x00-\x1F\x7F-\x9F\u0080-\u009F\u2000-\u200F\u2028-\u2029\'\"\\])')
+
+    return re.sub(pattern, _escape, s)
+
+import ast
+def unescape_all(s: str) -> str: # By Kimi-K2 & KyvYang
+    return ast.literal_eval(f'"{s}"')

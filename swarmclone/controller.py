@@ -3,7 +3,7 @@
 """
 import asyncio
 from typing import Any
-from dataclasses import asdict
+from dataclasses import asdict, fields, MISSING
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -62,12 +62,106 @@ class Controller:
         /api:   API路由
         /assets: 静态资源路由
         /api/get_version: 获取版本信息
+        /api/get_config: 获取配置信息
         """
         self.app.mount("/assets", StaticFiles(directory="panel/dist/assets"), name="assets")
         
         @self.app.get("/")
         async def root():
             return HTMLResponse(open("panel/dist/index.html").read())
+        
+        @self.app.get("/api/get_config")
+        async def get_config():
+            """
+            [
+                {
+                    "role_name":【模块角色】,
+                    "modules":[
+                        {
+                            "module_name":【模块名字】
+                            "desc":【介绍】,
+                            "config":[
+                                {
+                                    "name":【配置项名字】
+                                    "type":【类型，int整数float小数（默认小数点后2位精度）str字符串bool布尔值（是/否）selection选择项】,
+                                    "desc":【介绍信息】,
+                                    "required":【布尔值，是否必填】,
+                                    "default":【默认值】,
+                                    "options":【可选项，无论类型均可提供，若非选择项仍提供选项则说明有预设值可选（比如模型可选deepseek-v3/qwen3之类），若为空则为无选项】
+                                },...
+                            ]
+                        },...
+                    ]
+                },...
+            ]
+            """
+            config: list[Any] = []
+            for role, role_module_classes in module_classes.items():
+                config.append({"role_name": role.value, "modules": []})
+                for module_name, module_class in role_module_classes.items():
+                    config[-1]["modules"].append({
+                        "module_name": module_name,
+                        "desc": module_class.__doc__ or "",
+                        "config": []
+                    })
+                    for field in fields(module_class.config_class): # config_class是被其元类注入的，是dataclass
+                        name = field.name
+                        default = ""
+                        _type: str
+                        raw_type = field.type
+                        if isinstance(raw_type, type):
+                            raw_type = raw_type.__name__
+                        if "int" in raw_type and "float" not in raw_type:
+                            _type = "int"
+                        elif "float" in raw_type:
+                            _type = "float"
+                        elif "bool" in raw_type:
+                            _type = "bool"
+                        else:
+                            _type = "str"
+                        selection = field.metadata.get("selection", False)
+                        if selection:
+                            _type = "selection"
+                        required = field.metadata.get("required", False)
+                        desc = field.metadata.get("desc", "")
+                        options = field.metadata.get("options", [])
+                        if field.default is not MISSING:
+                            default = field.default
+                        elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
+                            if _type == "str":
+                                default = str(default)
+                            elif _type == "int":
+                                default = int(default)
+                            elif _type == "float":
+                                default = float(default)
+                            elif _type == "bool":
+                                default = bool(default)
+                            elif _type == "selection":
+                                try:
+                                    default = options.index(default)
+                                except ValueError:
+                                    default = 0
+                        else:
+                            if _type == "str":
+                                default = ""
+                            elif _type == "int":
+                                default = 0
+                            elif _type == "float":
+                                default = 0.0
+                            elif _type == "bool":
+                                default = False
+                            elif _type == "selection":
+                                default = 0 # 选第一个
+                        config[-1]["modules"][-1]["config"].append({
+                            "name": name,
+                            "type": _type,
+                            "desc": desc,
+                            "required": required,
+                            "default": default,
+                            "options": options
+                        })
+            print(config)
+            return JSONResponse(config)
 
         @self.app.post("/api")
         async def api(request: Request):

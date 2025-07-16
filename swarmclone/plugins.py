@@ -1,15 +1,15 @@
-from dataclasses import field
+from dataclasses import field, dataclass
 from typing import Any
 from .constants import *
 from .messages import *
 from .modules import *
 from time import time
 
-
+@dataclass
 class ScheduledPlaylistConfig(ModuleConfig):
     playlist: dict[str, dict[str, Any]] = field(default_factory=dict, metadata={
         "required": False,
-        "desc": "定时播放列表"
+        "desc": "定时播放列表，按JSON格式填写：{\"【歌曲名字】\":{\"file_name\":\"【歌曲文件路径】\",\"subtitle\":\"【歌曲字幕路径】\",\"start_time\":【歌曲开始播放时间戳】}}"
     })
 
 class ScheduledPlaylist(ModuleBase):

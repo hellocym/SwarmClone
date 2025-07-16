@@ -20,15 +20,25 @@ class ASRSherpaConfig(ModuleConfig):
     })
     userdb: dict[str, str] = field(default_factory=lambda : {"DeveloperA": "12345"}, metadata={
         "required": False,
-        "desc": "用户名以及密码"
+        "desc": "用户名以及密码（按JSON格式输入，用户名作为key，密码作为value）"
     })
     model: str = field(default="zipformer", metadata={
         "required": False,
-        "desc": "语音识别模型id"
+        "desc": "语音识别模型id",
+        "selection": True,
+        "options": [
+            {"key": "Zipformer", "value": "zipformer"},
+            {"key": "Paraformer", "value": "paraformer"}
+        ]
     })
     quantized: str = field(default="fp32", metadata={
         "required": False,
-        "desc": "语音识别模型精度"
+        "desc": "语音识别模型精度",
+        "selection": True,
+        "options": [
+            {"key": "32位浮点", "value": "fp32"},
+            {"key": "8位整型", "value": "int8"}
+        ]
     })
     model_path: str = field(default="~/.swarmclone/asr/", metadata={
         "required": False,
@@ -36,15 +46,28 @@ class ASRSherpaConfig(ModuleConfig):
     })
     decoding_method: str = field(default="greedy_search", metadata={
         "required": False,
-        "desc": "解码方式，支持greedy_search和beam_search"
+        "desc": "解码方式",
+        "selection": True,
+        "options": [
+            {"key": "贪心搜索", "value": "greedy_search"},
+            {"key": "束搜索", "value": "beam_search"}
+        ]
     })
     provider: str = field(default="cpu", metadata={
         "required": False,
-        "desc": "语音识别设备，支持cpu和cuda"
+        "desc": "语音识别设备，支持cpu和cuda",
+        "selection": True,
+        "options": [
+            {"key": "CPU", "value": "cpu"},
+            {"key": "CUDA", "value": "cuda"}
+        ]
     })
     hotwords_file: str = field(default="", metadata={
         "required": False,
-        "desc": "热词文件路径"
+        "desc": "热词文件路径",
+        "options": [
+            {"key": "不使用热词", "value": ""}
+        ]
     })
     hotwords_score: float = field(default=1.5, metadata={
         "required": False,

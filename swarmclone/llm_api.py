@@ -44,7 +44,13 @@ class LLMOpenAIConfig(LLMBaseConfig):
     })
     temperature: float = field(default=0.7, metadata={
         "required": False,
-        "desc": "模型温度"
+        "desc": "模型温度",
+        "selection": False,
+        "options": [
+            {"key": "0.7", "value": 0.7},
+            {"key": "0.9", "value": 0.9},
+            {"key": "1.0", "value": 1.0}
+        ]
     })
 
 class LLMOpenAI(LLMBase):

@@ -19,7 +19,7 @@ class LLMBaseConfig(ModuleConfig):
         "required": False,
         "desc": "弹幕逐条回复数量上限"
     })
-    idle_timeout: int | float = field(default=float("inf"), metadata={
+    idle_timeout: int | float = field(default=1e20, metadata={ # 因为要支持json，所以不能使用inf
         "required": False,
         "desc": "自动发起对话时间间隔"
     })

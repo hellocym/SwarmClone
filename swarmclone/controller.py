@@ -107,12 +107,13 @@ class Controller:
                     for field in fields(module_class.config_class): # config_class是被其元类注入的，是dataclass
                         name = field.name
                         default = ""
+                        # 将各种类型转换为字符串表示
                         _type: str
                         raw_type = field.type
                         if isinstance(raw_type, type):
                             raw_type = raw_type.__name__
-                        if "int" in raw_type and "float" not in raw_type:
-                            _type = "int"
+                        if "int" in raw_type and "float" not in raw_type: # 只在一个参数只能是int而不能是float时确定其为int
+                            _type = "int" # TODO: if "int" == raw_type好像也行？
                         elif "float" in raw_type:
                             _type = "float"
                         elif "bool" in raw_type:
@@ -121,27 +122,25 @@ class Controller:
                             _type = "str"
                         selection = field.metadata.get("selection", False)
                         if selection:
-                            _type = "selection"
+                            _type = "selection" # 如果是选择项则不管类型如何
                         required = field.metadata.get("required", False)
                         desc = field.metadata.get("desc", "")
                         options = field.metadata.get("options", [])
-                        if field.default is not MISSING:
-                            default = field.default
-                        elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
-                            if _type == "str":
-                                default = str(default)
-                            elif _type == "int":
-                                default = int(default)
-                            elif _type == "float":
-                                default = float(default)
-                            elif _type == "bool":
-                                default = bool(default)
-                            elif _type == "selection":
+                        if field.default is not MISSING and (default := field.default) is not None:
+                            # 保证默认值的类型与配置项的类型一致
+                            if _type == "selection":
                                 try:
                                     default = options.index(default)
                                 except ValueError:
-                                    default = 0
-                        else:
+                                    default = 0 # 找不到则选第一个
+                        elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
+                            # 保证默认值的类型与配置项的类型一致
+                            if _type == "selection":
+                                try:
+                                    default = options.index(default)
+                                except ValueError:
+                                    default = 0 # 找不到则选第一个
+                        else: # 无默认值则生成对应类型的空值
                             if _type == "str":
                                 default = ""
                             elif _type == "int":
@@ -160,7 +159,6 @@ class Controller:
                             "default": default,
                             "options": options
                         })
-            print(config)
             return JSONResponse(config)
 
         @self.app.post("/api")

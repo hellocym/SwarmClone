@@ -4,12 +4,30 @@ from .messages import *
 
 @dataclass
 class BiliBiliChatConfig(ModuleConfig):
-    live_room_id: int = field(default=0, metadata={"required": True, "desc": "目标B站直播间ID"})
-    sessdata: str = field(default="", metadata={"required": False, "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"})
-    bili_jct: str = field(default="", metadata={"required": False, "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"})
-    buvid3: str = field(default="", metadata={"required": False, "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"})
-    dedeuserid: str = field(default="", metadata={"required": False, "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"})
-    ac_time_value: str = field(default="", metadata={"required": False, "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"})
+    live_room_id: int = field(default=0, metadata={
+        "required": True,
+        "desc": "目标B站直播间ID"
+    })
+    sessdata: str = field(default="", metadata={
+        "required": False,
+        "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"
+    })
+    bili_jct: str = field(default="", metadata={
+        "required": False,
+        "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"
+    })
+    buvid3: str = field(default="", metadata={
+        "required": False,
+        "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"
+    })
+    dedeuserid: str = field(default="", metadata={
+        "required": False,
+        "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"
+    })
+    ac_time_value: str = field(default="", metadata={
+        "required": False,
+        "desc": "见https://nemo2011.github.io/bilibili-api/#/get-credential，可不填"
+    })
 
 class BiliBiliChat(ModuleBase):
     role: ModuleRoles = ModuleRoles.CHAT

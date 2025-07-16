@@ -17,15 +17,46 @@ from .utils import *
 
 @dataclass
 class LLMTransformersConfig(LLMBaseConfig):
-    classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM", metadata={"required": False, "desc": "情感分类模型路径"})
-    classifier_model_id: str = field(default="MomoiaMoia/SWCBiLSTM", metadata={"required": False, "desc": "情感分类模型id"})
-    classifier_model_source: str = field(default="modelscope", metadata={"required": False, "desc": "情感分类模型来源，仅支持huggingface或modelscope"})
-    model_path: str = field(default="~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-instruct", metadata={"required": False, "desc": "模型路径"})
-    model_id: str = field(default="", metadata={"required": True, "desc": "模型id"})
-    model_source: str = field(default="modelscope", metadata={"required": False, "desc": "语言模型来源，仅支持huggingface或modelscope"})
-    stop_string: str = field(default="\n\n\n", metadata={"required": False, "desc": "模型输出停止符"})
-    temperature: float = field(default=0.5, metadata={"required": False, "desc": "模型温度"})
-    device: str = field(default="cuda:0", metadata={"required": False, "desc": "模型运行设备，如果没有cuda请改为cpu"})
+    classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM", metadata={
+        "required": False,
+        "desc": "情感分类模型路径"
+    })
+    classifier_model_id: str = field(default="MomoiaMoia/SWCBiLSTM", metadata={
+        "required": False,
+        "desc": "情感分类模型id"
+    })
+    classifier_model_source: str = field(default="modelscope", metadata={
+        "required": False,
+        "desc": "情感分类模型来源，仅支持huggingface或modelscope",
+        "options": ["huggingface", "modelscope"],
+        "selection": True
+    })
+    model_path: str = field(default="~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-instruct", metadata={
+        "required": False,
+        "desc": "模型路径"
+    })
+    model_id: str = field(default="", metadata={
+        "required": True,
+        "desc": "模型id"
+    })
+    model_source: str = field(default="modelscope", metadata={
+        "required": False,
+        "desc": "语言模型来源，仅支持huggingface或modelscope",
+        "options": ["huggingface", "modelscope"],
+        "selection": True
+    })
+    stop_string: str = field(default="\n\n\n", metadata={
+        "required": False,
+        "desc": "模型输出停止符"
+    })
+    temperature: float = field(default=0.5, metadata={
+        "required": False,
+        "desc": "模型温度"
+    })
+    device: str = field(default="cuda:0", metadata={
+        "required": False,
+        "desc": "模型运行设备，如果没有cuda请改为cpu"
+    })
 
 class LLMTransformers(LLMBase):
     role: ModuleRoles = ModuleRoles.LLM

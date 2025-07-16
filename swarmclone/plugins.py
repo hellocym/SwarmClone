@@ -7,7 +7,10 @@ from time import time
 
 
 class ScheduledPlaylistConfig(ModuleConfig):
-    playlist: dict[str, dict[str, Any]] = field(default_factory=dict, metadata={"required": False, "desc": "定时播放列表"})
+    playlist: dict[str, dict[str, Any]] = field(default_factory=dict, metadata={
+        "required": False,
+        "desc": "定时播放列表"
+    })
 
 class ScheduledPlaylist(ModuleBase):
     role: ModuleRoles = ModuleRoles.PLUGIN

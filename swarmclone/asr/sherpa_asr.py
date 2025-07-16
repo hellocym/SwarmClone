@@ -68,11 +68,11 @@ def create_recognizer(asr_config: ASRSherpaConfig):
         assert_file_exists(joiner)
         assert_file_exists(tokens)
         
-        assert isinstance((decoding_method := asr_config.decoding_method), str)
-        assert isinstance((provider := asr_config.provider), str)
-        assert isinstance((hotwords_file := asr_config.hotwords_file), str)
-        assert isinstance((hotwords_score := asr_config.hotwords_score), float)
-        assert isinstance((blank_penalty := asr_config.blank_penalty), float)
+        decoding_method = asr_config.decoding_method
+        provider = asr_config.provider
+        hotwords_file = asr_config.hotwords_file
+        hotwords_score = asr_config.hotwords_score
+        blank_penalty = asr_config.blank_penalty
         recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
             tokens=tokens,
             encoder=encoder,

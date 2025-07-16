@@ -27,17 +27,32 @@ is_linux = sys.platform.startswith("linux")
 
 @dataclass
 class TTSCosyvoiceConfig(ModuleConfig):
-    sft_model: str = field(default="CosyVoice-300M-SFT", metadata={"required": False, "desc": "语音微调模型"})
-    ins_model: str = field(default="CosyVoice-300M-Instruct", metadata={"required": False, "desc": "语音指令模型"})
-    tune: str = field(default="知络_1.2", metadata={"required": False, "desc": "音色"})
-    model_path: str = field(default="~/.swarmclone/tts_cosy_voice", metadata={"required": False, "desc": "语音模型路径"})
-    float16: bool = field(default=True, metadata={"required": False, "desc": "是否启用量化"})
+    sft_model: str = field(default="CosyVoice-300M-SFT", metadata={
+        "required": False,
+        "desc": "语音微调模型"
+    })
+    ins_model: str = field(default="CosyVoice-300M-Instruct", metadata={
+        "required": False,
+        "desc": "语音指令模型"
+    })
+    tune: str = field(default="知络_1.2", metadata={
+        "required": False,
+        "desc": "音色"
+    })
+    model_path: str = field(default="~/.swarmclone/tts_cosy_voice", metadata={
+        "required": False,
+        "desc": "语音模型路径"
+    })
+    float16: bool = field(default=True, metadata={
+        "required": False,
+        "desc": "是否启用量化"
+    })
 def init_tts(config: TTSCosyvoiceConfig):
     # TTS Model 初始化
-    assert isinstance((model_path := config.model_path), str)
-    assert isinstance((sft_model := config.sft_model), str)
-    assert isinstance((ins_model := config.ins_model), str)
-    assert isinstance((fp16 := config.float16), bool)
+    model_path = config.model_path
+    sft_model = config.sft_model
+    ins_model = config.ins_model
+    fp16 = config.float16
     full_model_path: str = os.path.expanduser(model_path)
     tries = 0
     while True:

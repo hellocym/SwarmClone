@@ -14,9 +14,18 @@ import random
 
 @dataclass
 class NCatBotChatConfig(ModuleConfig):
-    target_group_id: str = field(default="", metadata={"required": True, "desc": "模板群号"})
-    bot_id: str = field(default="", metadata={"required": True, "desc": "机器人QQ号"})
-    root_id: str = field(default="", metadata={"required": True, "desc": "管理员QQ号"})
+    target_group_id: str = field(default="", metadata={
+        "required": True,
+        "desc": "模板群号"
+    })
+    bot_id: str = field(default="", metadata={
+        "required": True,
+        "desc": "机器人QQ号"
+    })
+    root_id: str = field(default="", metadata={
+        "required": True,
+        "desc": "管理员QQ号"
+    })
 
 class NCatBotChat(ModuleBase):
     role: ModuleRoles = ModuleRoles.CHAT

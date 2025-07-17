@@ -205,15 +205,18 @@ class Controller:
                         missing_modules.append(module_name)
                         continue
                     
-                    # 去转义
-                    for key, value in module_config.items():
-                        if isinstance(value, str):
-                            module_config[key] = unescape_all(value)
-                    try:
-                        module = module_class(**module_config)
-                    except Exception as e:
-                        return JSONResponse({"error": str(e)}, 500)
-                    self.add_module(module)
+                    if not missing_modules: # 如果已有缺少模块就不再尝试加载更多模块
+                        for key, value in module_config.items():
+                            if isinstance(value, str):
+                                # 去转义
+                                module_config[key] = unescape_all(value)
+                            else:
+                                module_config[key] = value
+                        try:
+                            module = module_class(**module_config)
+                        except Exception as e:
+                            return JSONResponse({"error": str(e)}, 500)
+                        self.add_module(module)
             if missing_modules:
                 return JSONResponse(missing_modules, 404)
             return JSONResponse({"status": "OK"})

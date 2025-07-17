@@ -118,9 +118,13 @@ class Controller:
                         selection = field.metadata.get("selection", False)
                         if selection:
                             _type = "selection" # 如果是选择项则不管类型如何
+                        
                         required = field.metadata.get("required", False)
+
                         desc = field.metadata.get("desc", "")
+
                         options = field.metadata.get("options", [])
+
                         if field.default is not MISSING and (default := field.default) is not None:
                             pass
                         elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
@@ -138,13 +142,31 @@ class Controller:
                                 default = options[0]["value"]
                         if isinstance(default, str):
                             default = escape_all(default) # 进行转义
+                        
+                        # 如果有的话，提供最大最小值和步长
+                        if "min" in field.metadata:
+                            minimum = field.metadata["min"]
+                        else:
+                            minimum = None
+                        if "max" in field.metadata:
+                            maximum = field.metadata["max"]
+                        else:
+                            maximum = None
+                        if "step" in field.metadata:
+                            step = field.metadata["step"]
+                        else:
+                            step = None
+
                         config[-1]["modules"][-1]["config"].append({
                             "name": name,
                             "type": _type,
                             "desc": desc,
                             "required": required,
                             "default": default,
-                            "options": options
+                            "options": options,
+                            "min": minimum,
+                            "max": maximum,
+                            "step": step
                         })
             return JSONResponse(config)
         

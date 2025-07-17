@@ -50,7 +50,10 @@ class LLMOpenAIConfig(LLMBaseConfig):
             {"key": "0.7", "value": 0.7},
             {"key": "0.9", "value": 0.9},
             {"key": "1.0", "value": 1.0}
-        ]
+        ],
+        "min": 0.0,  # 最小温度为 0
+        "max": 1.0,  # 最大温度设为 1
+        "step": 0.1  # 步长为 0.1
     })
 
 class LLMOpenAI(LLMBase):

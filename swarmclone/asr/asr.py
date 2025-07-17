@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 from .sherpa_asr import create_recognizer
 from ..modules import *
 from ..messages import ASRMessage, ASRActivated
+from ..utils import *
+
+available_devices = get_devices()
 
 @dataclass
 class ASRSherpaConfig(ModuleConfig):
@@ -16,7 +19,9 @@ class ASRSherpaConfig(ModuleConfig):
     })
     port: int = field(default=8004, metadata={
         "required": False,
-        "desc": "监听端口，默认8004"
+        "desc": "监听端口，默认8004",
+        "min": 1,
+        "max": 65535
     })
     userdb: dict[str, str] = field(default_factory=lambda : {"DeveloperA": "12345"}, metadata={
         "required": False,
@@ -53,13 +58,12 @@ class ASRSherpaConfig(ModuleConfig):
             {"key": "束搜索", "value": "beam_search"}
         ]
     })
-    provider: str = field(default="cpu", metadata={
+    provider: str = field(default=[*available_devices.keys()][0], metadata={
         "required": False,
-        "desc": "语音识别设备，支持cpu和cuda",
+        "desc": "语音识别模型运行设备",
         "selection": True,
         "options": [
-            {"key": "CPU", "value": "cpu"},
-            {"key": "CUDA", "value": "cuda"}
+            {"key": k, "value": v} for k, v in available_devices.items()
         ]
     })
     hotwords_file: str = field(default="", metadata={
@@ -71,11 +75,17 @@ class ASRSherpaConfig(ModuleConfig):
     })
     hotwords_score: float = field(default=1.5, metadata={
         "required": False,
-        "desc": "热词分数"
+        "desc": "热词分数",
+        "min": 0.0,
+        "max": 10.0,
+        "step": 0.1
     })
     blank_penalty: float = field(default=0.0, metadata={
         "required": False,
-        "desc": "空白惩罚"
+        "desc": "空白惩罚",
+        "min": 0.0,
+        "max": 10.0,
+        "step": 0.1
     })
 
 class ASRSherpa(ModuleBase):

@@ -13,23 +13,38 @@ from .module_manager import *
 class LLMBaseConfig(ModuleConfig):
     chat_maxsize: int = field(default=20, metadata={
         "required": False,
-        "desc": "弹幕接受数量上限"
+        "desc": "弹幕接受数量上限",
+        "min": 1,  # 最少接受 1 条弹幕
+        "max": 1000
     })
     chat_size_threshold: int = field(default=10, metadata={
         "required": False,
-        "desc": "弹幕逐条回复数量上限"
+        "desc": "弹幕逐条回复数量上限",
+        "min": 1,  # 最少逐条回复 1 条
+        "max": 100
     })
-    idle_timeout: int | float = field(default=1e20, metadata={ # 因为要支持json，所以不能使用inf
+    do_start_topic: bool = field(default=False, metadata={
         "required": False,
-        "desc": "自动发起对话时间间隔"
+        "desc": "是否自动发起对话"
+    })
+    idle_timeout: int | float = field(default=120, metadata={
+        "required": False,
+        "desc": "自动发起对话时间间隔",
+        "min": 0.0,
+        "max": 600,
+        "step": 1.0  # 步长为 1
     })
     asr_timeout: int = field(default=60, metadata={
         "required": False,
-        "desc": "语音识别超时时间"
+        "desc": "语音识别超时时间",
+        "min": 1,  # 最少 1 秒
+        "max": 3600  # 最大 1 小时
     })
     tts_timeout: int = field(default=60, metadata={
         "required": False,
-        "desc": "语音合成超时时间"
+        "desc": "语音合成超时时间",
+        "min": 1,  # 最少 1 秒
+        "max": 3600  # 最大 1 小时
     })
     chat_role: str = field(default="user", metadata={
         "required": False,
@@ -65,6 +80,7 @@ class LLMBase(ModuleBase):
         self.chat_maxsize: int = 20
         self.chat_size_threshold: int = 10
         self.chat_queue: asyncio.Queue[ChatMessage] = asyncio.Queue(maxsize=self.chat_maxsize)
+        self.do_start_topic: bool = self.config.do_start_topic
         self.idle_timeout: int | float = self.config.idle_timeout
         self.asr_timeout: int = self.config.asr_timeout
         self.tts_timeout: int = self.config.tts_timeout
@@ -172,7 +188,7 @@ class LLMBase(ModuleBase):
                             self._switch_to_generating()
                         except asyncio.QueueEmpty:
                             pass
-                    elif time.time() - self.idle_start_time > self.idle_timeout:
+                    elif self.do_start_topic and time.time() - self.idle_start_time > self.idle_timeout:
                         self._add_system_history("请随便说点什么吧！")
                         self._switch_to_generating()
 

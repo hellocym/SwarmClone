@@ -15,6 +15,8 @@ from .modules import *
 from .messages import *
 from .utils import *
 
+available_devices = get_devices()
+
 @dataclass
 class LLMTransformersConfig(LLMBaseConfig):
     classifier_model_path: str = field(default="~/.swarmclone/llm/EmotionClassification/SWCBiLSTM", metadata={
@@ -51,11 +53,18 @@ class LLMTransformersConfig(LLMBaseConfig):
     })
     temperature: float = field(default=0.5, metadata={
         "required": False,
-        "desc": "模型温度"
+        "desc": "模型温度",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.1
     })
-    device: str = field(default="cuda:0", metadata={
+    device: str = field(default=[*available_devices.keys()][0], metadata={
         "required": False,
-        "desc": "模型运行设备，如果没有cuda请改为cpu"
+        "desc": "模型运行设备",
+        "selection": True,
+        "options": [
+            {"key": k, "value": v} for k, v in available_devices.items()
+        ]
     })
 
 class LLMTransformers(LLMBase):

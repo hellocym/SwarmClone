@@ -62,3 +62,11 @@ def escape_all(s: str) -> str: # By Kimi-K2 & Doubao-Seed-1.6
 import ast
 def unescape_all(s: str) -> str: # By Kimi-K2 & KyvYang
     return ast.literal_eval(f'"{s}"')
+
+import torch
+def get_devices() -> dict[str, str]:
+    devices: dict[str, str] = {}
+    for i in range(torch.cuda.device_count()):
+        devices[f"cuda:{i}"] = torch.cuda.get_device_name(i)
+    devices['cpu'] = 'CPU'
+    return devices

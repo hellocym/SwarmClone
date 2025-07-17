@@ -85,7 +85,20 @@ class NCatBotChat(ModuleBase):
             text = ""
 
 class NCatBotFrontendConfig(ModuleConfig):
-    sleep_range: tuple[float, float] = field(default=(0.5, 1.5), metadata={"required": False, "desc": "模型回复随机延迟范围"})
+    sleeptime_min: int | float = field(default=0, metadata={
+        "required": False,
+        "desc": "模型回复随机延迟最小值",
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+    })
+    sleeptime_max: int | float = field(default=0, metadata={
+        "required": False,
+        "desc": "模型回复随机延迟最大值",
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+    })
 
 class NCatBotFrontend(ModuleBase):
     role: ModuleRoles = ModuleRoles.FRONTEND
@@ -97,7 +110,7 @@ class NCatBotFrontend(ModuleBase):
         self.llm_buffer = ""
     
     def get_sleep_time(self) -> float:
-        return random.random() * (self.config.sleep_range[1] - self.config.sleep_range[0]) + self.config.sleep_range[0]
+        return random.random() * (self.config.sleeptime_max - self.config.sleeptime_min) + self.config.sleeptime_min
     
     async def process_task(self, task: Message | None) -> Message | None:
         if isinstance(task, LLMMessage):

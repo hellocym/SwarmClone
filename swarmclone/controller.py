@@ -53,17 +53,62 @@ class Controller:
     def register_routes(self):
         """ 注册FastAPI路由
         
-        /:      根路由
-        /api:   API路由
-        /assets: 静态资源路由
-        /api/get_version: 获取版本信息
-        /api/get_config: 获取配置信息
+        /:      根路由(GET)
+        /api:   API路由(POST)
+        /assets: 静态资源路由(GET)
+        /api/get_version: 获取版本信息(GET)
+        /api/startup_param: 获取配置信息(GET)
+        /api/load_config: 加载配置信息(POST)
+        /api/startup: 启动(POST)
+        /api/get_status: 获取状态(GET)
         """
         self.app.mount("/assets", StaticFiles(directory="panel/dist/assets"), name="assets")
         
         @self.app.get("/")
         async def root():
             return HTMLResponse(open("panel/dist/index.html").read())
+        
+        @self.app.get("/api/get_status")
+        async def get_status():
+            """
+            [
+                {
+                    "role_name":【模块角色】,
+                    "modules":[
+                        {
+                            "module_name":【模块名字】,
+                            "running":【布尔值，是否运行】,
+                            "loaded":【布尔值，是否加载】
+                        },...
+                    ]
+                },...
+            ]
+            """
+            # 找到所有模块类
+            status = []
+            for role, role_module_classes in module_classes.items():
+                status.append({"role_name": role.value, "modules": []})
+                for module_name, _module_class in role_module_classes.items():
+                    status[-1]["modules"].append({
+                        "module_name": module_name,
+                        "running": False
+                    })
+            # 将运行中的模块标记为True
+            for role in self.modules:
+                for module in self.modules[role]:
+                    for item in status[-1]["modules"]:
+                        if item["module_name"] == module.name:
+                            item["running"] = module.running
+                            item["loaded"] = True
+            return JSONResponse(status)
+
+        @self.app.post("/api/startup")
+        async def startup(request: Request):
+            try:
+                self.start_modules()
+            except Exception as e:
+                return JSONResponse({"error": str(e)}, 500)
+            return JSONResponse({"status": "OK"})
         
         @self.app.get("/api/startup_param", response_class=JSONResponse)
         async def get_startup_param() -> JSONResponse:

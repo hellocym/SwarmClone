@@ -28,7 +28,12 @@ class LLMOpenAIConfig(LLMBaseConfig):
     })
     classifier_model_source: str = field(default="modelscope", metadata={
         "required": False,
-        "desc": "情感分类模型来源，仅支持huggingface或modelscope"
+        "desc": "情感分类模型来源，仅支持huggingface或modelscope",
+        "selection": True,
+        "options": [
+            {"key": "Huggingface🤗", "value": "huggingface"},
+            {"key": "ModelScope", "value": "modelscope"}
+        ]
     })
     model_id: str = field(default="", metadata={
         "required": True,

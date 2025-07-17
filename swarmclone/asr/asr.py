@@ -63,7 +63,7 @@ class ASRSherpaConfig(ModuleConfig):
         "desc": "语音识别模型运行设备",
         "selection": True,
         "options": [
-            {"key": k, "value": v} for k, v in available_devices.items()
+            {"key": v, "value": k} for k, v in available_devices.items()
         ]
     })
     hotwords_file: str = field(default="", metadata={

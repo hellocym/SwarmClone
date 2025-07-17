@@ -30,7 +30,10 @@ class LLMTransformersConfig(LLMBaseConfig):
     classifier_model_source: str = field(default="modelscope", metadata={
         "required": False,
         "desc": "情感分类模型来源，仅支持huggingface或modelscope",
-        "options": ["huggingface", "modelscope"],
+        "options": [
+            {"key": "Huggingface🤗", "value": "huggingface"},
+            {"key": "ModelScope", "value": "modelscope"}
+        ],
         "selection": True
     })
     model_path: str = field(default="~/.swarmclone/llm/MiniLM2/MiniLM2-nGPT-0.4b-instruct", metadata={
@@ -44,7 +47,10 @@ class LLMTransformersConfig(LLMBaseConfig):
     model_source: str = field(default="modelscope", metadata={
         "required": False,
         "desc": "语言模型来源，仅支持huggingface或modelscope",
-        "options": ["huggingface", "modelscope"],
+        "options": [
+            {"key": "Huggingface🤗", "value": "huggingface"},
+            {"key": "ModelScope", "value": "modelscope"}
+        ],
         "selection": True
     })
     stop_string: str = field(default="\n\n\n", metadata={
@@ -63,7 +69,7 @@ class LLMTransformersConfig(LLMBaseConfig):
         "desc": "模型运行设备",
         "selection": True,
         "options": [
-            {"key": k, "value": v} for k, v in available_devices.items()
+            {"key": v, "value": k} for k, v in available_devices.items()
         ]
     })
 

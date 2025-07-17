@@ -65,8 +65,8 @@ class Controller:
         async def root():
             return HTMLResponse(open("panel/dist/index.html").read())
         
-        @self.app.get("/api/get_config", response_class=JSONResponse)
-        async def get_config() -> JSONResponse:
+        @self.app.get("/api/startup_param", response_class=JSONResponse)
+        async def get_startup_param() -> JSONResponse:
             """
             [
                 {

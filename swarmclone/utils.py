@@ -67,6 +67,6 @@ import torch
 def get_devices() -> dict[str, str]:
     devices: dict[str, str] = {}
     for i in range(torch.cuda.device_count()):
-        devices[f"cuda:{i}"] = torch.cuda.get_device_name(i)
+        devices[f"cuda:{i}"] = f"cuda:{i} " + torch.cuda.get_device_name(i)
     devices['cpu'] = 'CPU'
     return devices

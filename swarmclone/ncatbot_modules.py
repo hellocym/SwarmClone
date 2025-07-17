@@ -84,6 +84,7 @@ class NCatBotChat(ModuleBase):
             await self.results_queue.put(message)
             text = ""
 
+@dataclass
 class NCatBotFrontendConfig(ModuleConfig):
     sleeptime_min: int | float = field(default=0, metadata={
         "required": False,

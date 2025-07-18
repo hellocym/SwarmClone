@@ -1,5 +1,6 @@
 ## 模块开发模式：
 ```python
+# my_module.py
 from swarmclone.constants import *
 from swarmclone.utils import *
 from swarmclone.modules import *
@@ -36,7 +37,7 @@ class MyModuleConfig(ModuleConfig):
     })
     minimal_float_config: float = field(default=1.0) # 显示为一个小数输入框，默认值为1.0，无配置项介绍
 
-class MyModule(Module):
+class MyModule(ModuleBase):
     role: ModuleRole = ModuleRole.PLUGIN # 模型角色，可选项见constants.py
     config_class = MyModuleConfig # 声明配置类
     config: config_class # 不必须，声明配置类型，防止静态类型检查器报错
@@ -53,4 +54,13 @@ class MyModule(Module):
             await asyncio.sleep(1) # 主逻辑
 ```
 以上示例并不完善，具体请见已有模块的定义。
-
+只需在创建控制器时保证模块文件已被导入即可让此模块在 webui 中显示。
+```python
+# main.py
+from swarmclone.controller import Controller
+from my_module import *
+if __name__ == "__main__":
+    controller = Controller()
+    controller.run()
+```
+也可选择将模块定义直接写入 plugins.py 中，这样直接使用 python -m swarmclone 即可使用此模块。

@@ -29,4 +29,6 @@ from .llm_api import LLMOpenAI
 from .bilibili_chat import BiliBiliChat
 from .asr import ASRSherpa
 from .ncatbot_modules import NCatBotFrontend, NCatBotChat
+from .tts_edge import TTSEdge
 from .plugins import *
+from .frontend_live2d import FrontendLive2D

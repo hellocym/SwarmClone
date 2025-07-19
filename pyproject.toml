@@ -47,6 +47,7 @@ linux = [
     "markdown>=3.8.2",
     "srt>=3.5.3",
     "pygame>=2.6.1",
+    "edge-tts>=7.0.2",
 ]
 windows = [
     "jieba>=0.42.1",
@@ -80,6 +81,7 @@ windows = [
     "markdown>=3.8.2",
     "srt>=3.5.3",
     "pygame>=2.6.1",
+    "edge-tts>=7.0.2",
 ]
 
 [tool.uv.sources]

@@ -137,3 +137,28 @@ def parse_srt_to_list(srt_text: str) -> list[dict[str, float | str]]: # By: Kimi
     # 校验：所有 duration 之和必须等于 total_expected
     assert abs(sum(item['duration'] for item in result) - total_expected) < 1e-4
     return result
+
+import asyncio
+from edge_tts import VoicesManager
+def get_voices():
+    """
+    获得 edge-tts 提供的所有中文声音，并返回[{'friendly_name': [人类易读的名称], 'voice': [声音标签]}, ...]
+    """
+    async def _get_voices():
+        voices = await VoicesManager.create()
+        chinese_voices = voices.find(Gender="Female", Locale="zh-CN")
+        return [
+            {
+                'friendly_name': f"{voice['FriendlyName']}",
+                'voice': voice['ShortName']
+            }
+            for voice in chinese_voices
+        ]
+    
+    # 获取事件循环并运行异步函数
+    try:
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(_get_voices())
+    except RuntimeError:
+        # 如果没有事件循环，创建一个新的
+        return asyncio.run(_get_voices())

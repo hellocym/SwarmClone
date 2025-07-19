@@ -712,6 +712,22 @@ wheels = [
 ]
 
 [[package]]
+name = "edge-tts"
+version = "7.0.2"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "certifi" },
+    { name = "srt" },
+    { name = "tabulate" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/f1/12/32554080d0d03ca0b874677fc4548ea9042ddfeb0b3f38cd107c760aff28/edge_tts-7.0.2.tar.gz", hash = "sha256:1374f493c170e6fe432d04012061c279e518c495524fa51b1b9da7368cc6b21b" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/33/21/6ebbc7fc6a4e58bcd49130273a072f7c2e4e6dc03735e078895b47148e30/edge_tts-7.0.2-py3-none-any.whl", hash = "sha256:effc554c249f02bd5013f28cd1faa22802e0757b031a7759be5960084ccb8d76" },
+]
+
+[[package]]
 name = "einops"
 version = "0.8.1"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
@@ -4077,6 +4093,7 @@ linux = [
     { name = "accelerate" },
     { name = "bilibili-api-python" },
     { name = "dragonmapper" },
+    { name = "edge-tts" },
     { name = "fastapi" },
     { name = "hanziconv" },
     { name = "jieba" },
@@ -4111,6 +4128,7 @@ windows = [
     { name = "accelerate" },
     { name = "bilibili-api-python" },
     { name = "dragonmapper" },
+    { name = "edge-tts" },
     { name = "fastapi" },
     { name = "hanziconv" },
     { name = "jieba" },
@@ -4149,6 +4167,7 @@ linux = [
     { name = "accelerate", specifier = ">=1.8.1" },
     { name = "bilibili-api-python", specifier = ">=17.3.0" },
     { name = "dragonmapper", specifier = ">=0.3.0" },
+    { name = "edge-tts", specifier = ">=7.0.2" },
     { name = "fastapi", specifier = ">=0.115.14" },
     { name = "hanziconv", specifier = ">=0.3.2" },
     { name = "jieba", specifier = ">=0.42.1" },
@@ -4183,6 +4202,7 @@ windows = [
     { name = "accelerate", specifier = ">=1.8.1" },
     { name = "bilibili-api-python", specifier = ">=17.3.0" },
     { name = "dragonmapper", specifier = ">=0.3.0" },
+    { name = "edge-tts", specifier = ">=7.0.2" },
     { name = "fastapi", specifier = ">=0.115.14" },
     { name = "hanziconv", specifier = ">=0.3.2" },
     { name = "jieba", specifier = ">=0.42.1" },
@@ -4223,6 +4243,15 @@ dependencies = [
 sdist = { url = "https://mirrors.aliyun.com/pypi/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517" }
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5" },
+]
+
+[[package]]
+name = "tabulate"
+version = "0.9.0"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/ec/fe/802052aecb21e3797b8f7902564ab6ea0d60ff8ca23952079064155d1ae1/tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f" },
 ]
 
 [[package]]

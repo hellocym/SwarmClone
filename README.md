@@ -14,13 +14,18 @@
 
 ## 如何开始？
 ### Python 部分
-您需要安装Python3.10和[uv](https://docs.astral.sh/uv/)：
+您需要安装Python3.10，并安装[uv](https://docs.astral.sh/uv/)：
 ```console
 $ pip install uv
 ```
 随后安装torch以及torchaudio：
+- Windows：
 ```console
-$ UV_TORCH_BACKEND=auto uv pip install torch torchaudio
+>set "UV_TORCH_BACKEND=auto" && uv pip install torch torchaudio  Windows 命令
+```
+- Linux：
+```console
+$ UV_TORCH_BACKEND=auto uv pip install torch torchaudio # Linux 命令
 ```
 随后，根据你的操作系统安装不同的依赖：
 - Windows：
@@ -49,7 +54,12 @@ $ cd panel
 $ npm install
 $ npm run build
 ```
-
+### 启动项目
+首先，回到项目根目录（`panel`目录的父目录）
+```console
+$ python -m swarmclone
+```
+随后进入终端给出的网址即可引入网页控制端。
 ## 如何参与开发？
 - 您可以加入我们的开发QQ群：1017493942
 

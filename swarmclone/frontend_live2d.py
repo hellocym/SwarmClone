@@ -29,6 +29,7 @@ class ModelLabel(QLabel):
         self.setStyleSheet("background: transparent; color: white; font: 20px; padding: 20px;")
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setTextFormat(Qt.TextFormat.RichText)
+        self.setWordWrap(True)
         self.setFixedHeight(100)
     
     def paintEvent(self, event: QPaintEvent, /) -> None:
@@ -38,7 +39,35 @@ class ModelLabel(QLabel):
         painter.setBrush(brush)
         painter.setPen(QPen(Qt.PenStyle.NoPen))
         painter.drawRoundedRect(self.rect(), 12, 12)
-        return super().paintEvent(event)
+        
+        # Custom text painting with bottom-up overflow
+        text_rect = self.rect().adjusted(20, 20, -20, -20)  # Account for padding
+        
+        # Use QTextDocument for proper word wrapping with rich text support
+        doc = QTextDocument()
+        doc.setHtml(self.text())  # Support rich text
+        doc.setDefaultFont(self.font())
+        doc.setTextWidth(text_rect.width())
+        doc.setDefaultTextOption(QTextOption(Qt.AlignmentFlag.AlignHCenter))
+        doc.setDocumentMargin(0)  # Remove internal margins
+        
+        # Calculate total height
+        total_height = doc.size().height()
+        
+        # Calculate starting Y position to align from bottom
+        if total_height > text_rect.height():
+            # Overflow case: show bottom portion (upward overflow)
+            start_y = text_rect.bottom() - total_height
+        else:
+            # Normal case: center vertically
+            start_y = text_rect.top() + (text_rect.height() - total_height) / 2
+        
+        # Draw the document
+        painter.save()
+        painter.setClipRect(text_rect)  # Clip to visible area
+        painter.translate(text_rect.left(), start_y)
+        doc.drawContents(painter)
+        painter.restore()
 
 class ChatRecordWidget(QTextEdit):
     def __init__(self):

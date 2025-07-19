@@ -129,7 +129,8 @@ class Controller:
                                     "options":【可选项，仅对选择项有用，若为空则为无选项】,
                                     "min":【最小值】,
                                     "max":【最大值】,
-                                    "step":【步长】 # 对于整数，默认为1，对于小数，默认为0.01
+                                    "step":【步长】 # 对于整数，默认为1，对于小数，默认为0.01,
+                                    "password": 【是否需要隐藏输入值，默认为否】
                                 },...
                             ]
                         },...
@@ -197,6 +198,9 @@ class Controller:
                         maximum = field.metadata.get("max")
                         step = field.metadata.get("step")
 
+                        # 是否需要隐藏输入值？
+                        password = field.metadata.get("password", False)
+
                         config[-1]["modules"][-1]["config"].append({
                             "name": name,
                             "type": _type,
@@ -206,7 +210,8 @@ class Controller:
                             "options": options,
                             "min": minimum,
                             "max": maximum,
-                            "step": step
+                            "step": step,
+                            "password": password
                         })
             return JSONResponse(config)
         

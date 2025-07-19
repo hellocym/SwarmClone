@@ -45,7 +45,8 @@ class LLMOpenAIConfig(LLMBaseConfig):
     })
     api_key: str = field(default="", metadata={
         "required": True,
-        "desc": "api key"
+        "desc": "api key",
+        "password": True
     })
     temperature: float = field(default=0.7, metadata={
         "required": False,

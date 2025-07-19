@@ -39,7 +39,7 @@ class MyModuleConfig(ModuleConfig):
     minimal_float_config: float = field(default=1.0) # 显示为一个小数输入框，默认值为1.0，无配置项介绍
 
 class MyModule(ModuleBase):
-    role: ModuleRole = ModuleRole.PLUGIN # 模型角色，可选项见constants.py
+    role: ModuleRoles = ModuleRoles.PLUGIN # 模型角色，可选项见constants.py
     config_class = MyModuleConfig # 声明配置类
     config: config_class # 不必须，声明配置类型，防止静态类型检查器报错
     def __init__(self, config: config_class | None = None, **kwargs): # 为了同时支持传入 config 和传入单独配置项两种方式

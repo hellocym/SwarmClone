@@ -78,40 +78,16 @@ def init_tts(config: TTSCosyvoiceConfig):
     
     return cosyvoice_sft, cosyvoice_ins
 
-class TTSCosyvoice(ModuleBase):
+class TTSCosyvoice(TTSBase):
     role: ModuleRoles = ModuleRoles.TTS
     config_class = TTSCosyvoiceConfig
+    config: config_class
     def __init__(self, config: TTSCosyvoiceConfig | None = None, **kwargs):
-        super().__init__()
-        self.config = self.config_class(**kwargs) if config is None else config
+        super().__init__(config, **kwargs)
         self.cosyvoice_models = init_tts(self.config)
-        self.processed_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
-
-    async def run(self):
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.preprocess_tasks())
-        while True:
-            task = await self.processed_queue.get()
-            if isinstance(task, LLMMessage): # 是一个需要处理的句子
-                id = task.get_value(self).get("id", None)
-                content = task.get_value(self).get("content", None)
-                emotions = task.get_value(self).get("emotion", None)
-                assert isinstance(id, str)
-                assert isinstance(content, str)
-                assert isinstance(emotions, dict)
-                await self.generate_sentence(id, content, emotions)
-
-    async def preprocess_tasks(self) -> None:
-        while True:
-            task = await self.task_queue.get()
-            if isinstance(task, ASRActivated):
-                while not self.processed_queue.empty():
-                    self.processed_queue.get_nowait() # 确保没有句子还在生成
-            else:
-                await self.processed_queue.put(task)
 
     @torch.no_grad()
-    async def generate_sentence(self, id: str, content: str, emotions: dict[str, float]) -> Message | None:
+    async def generate_sentence(self, id: str, content: str, emotions: dict[str, float]) -> TTSAlignedAudio:
         try:
             assert isinstance((tune := self.config.tune), str)
             output = await asyncio.to_thread(
@@ -143,4 +119,4 @@ class TTSCosyvoice(ModuleBase):
             # 音频数据
             with open(audio_name, "rb") as f:
                 audio_data = f.read()
-        await self.results_queue.put(TTSAlignedAudio(self, id, audio_data, intervals))
+        return TTSAlignedAudio(self, id, audio_data, intervals)

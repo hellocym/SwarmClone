@@ -8,6 +8,7 @@ from .llm_transformers import LLMTransformers
 from .llm_api import LLMOpenAI
 from .bilibili_chat import BiliBiliChat
 from .asr import ASRSherpa
+from .frontend_live2d import FrontendLive2D
 from .plugins import *
 from .ncatbot_modules import *
 

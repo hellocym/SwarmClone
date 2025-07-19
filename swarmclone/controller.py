@@ -281,13 +281,16 @@ class Controller:
             module = data.get("module")
             
             if module == ModuleRoles.ASR.value:
-                await self.handle_message(ASRActivated(self.agent))
-                message = ASRMessage(
-                    source=self.agent,
-                    speaker_name=data.get("speaker_name"),
-                    message=data.get("content")
-                )
-                await self.handle_message(message)
+                speaker_name = data.get("speaker_name")
+                content = data.get("message")
+                if speaker_name and content:
+                    await self.handle_message(ASRActivated(self.agent))
+                    message = ASRMessage(
+                        source=self.agent,
+                        speaker_name=speaker_name,
+                        message=content
+                    )
+                    await self.handle_message(message)
             
             return {"status": "OK"}
         

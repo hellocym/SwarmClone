@@ -227,7 +227,7 @@ class FrontendLive2D(ModuleBase):
                 elif isinstance(task, LLMMessage):
                     # 若接收到 LLM 信息，接受进新消息中并标注为未生成音频
                     data = task.get_value(self)
-                    self.message_queue.append({"id": data["id"], "message": data["message"], "aligned_audio": None})
+                    self.message_queue.append({"id": data["id"], "message": data["content"], "aligned_audio": None})
                 
                 elif isinstance(task, LLMEOS):
                     # 若接收到 LLM 停止信息，则加入停止标记进队列中
@@ -236,9 +236,9 @@ class FrontendLive2D(ModuleBase):
                 elif isinstance(task, TTSAlignedAudio):
                     # 若接收到 TTS 对齐信息，将对应消息标注为已生成音频
                     data = task.get_value(self)
-                    for data_index, message_id in enumerate(self.message_queue):
-                        if message_id["id"] == data["id"] and message_id["aligned_audio"] is None:
-                            message_id["aligned_audio"] = {
+                    for data_index, message in enumerate(self.message_queue):
+                        if message["id"] == data["id"] and message["aligned_audio"] is None:
+                            message["aligned_audio"] = {
                                 "data": data["data"],
                                 "align_data": data["align_data"]
                             }
@@ -309,7 +309,9 @@ class FrontendLive2D(ModuleBase):
                             self.singing = False
                         else:
                             await self.results_queue.put(AudioFinished(self))
-                
+        except Exception as e:
+            print(e)
+            raise
         finally:
             self.window.live2d_widget.live2d.dispose()
             self.app.quit()

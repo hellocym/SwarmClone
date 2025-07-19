@@ -137,9 +137,12 @@ class LLMOpenAI(LLMBase):
                 generating_sentence += (t or "")
                 self.generated_text += (t or "")
                 if (sentences := split_text(generating_sentence))[:-1]:
-                    for sentence in sentences:
+                    for sentence in sentences[:-1]:
                         if (sentence := sentence.strip()):
                             yield sentence, await self.get_emotion(sentence)
                     generating_sentence = sentences[-1]
-        finally: # 被中断或者生成完毕
-            yield generating_sentence, await self.get_emotion(generating_sentence)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(repr(e))
+        yield generating_sentence, await self.get_emotion(generating_sentence)

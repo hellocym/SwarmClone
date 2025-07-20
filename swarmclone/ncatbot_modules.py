@@ -73,7 +73,7 @@ class NCatBotChat(ModuleBase):
                 case {'type': 'face', 'data': {'id': _face_id, 'raw': {
                         'faceIndex': _face_index, 'faceText': face_text, 'faceType': _face_type
                     }}}:
-                    text += face_text
+                    text += face_text if face_text is not None else ""
                 case _: ...
         if do_accept and text:
             message = ChatMessage(

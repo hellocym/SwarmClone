@@ -1,7 +1,9 @@
 from __future__ import annotations # 为了延迟注解评估
 
+import time
 from typing import TYPE_CHECKING, Any
 from .constants import MessageType, ModuleRoles
+from .utils import *
 
 if TYPE_CHECKING:
     from .module_manager import ModuleBase  # 使用延迟导入解决循环依赖
@@ -14,7 +16,9 @@ class Message:
         self.kwargs: dict[str, Any] = kwargs # 消息内容
         self.source: ModuleBase = source # 消息来源，发送者对象
         self.destinations: list[ModuleRoles] = destinations # 消息目标，发送到哪几个角色中 ## TODO：支持精确到模块的消息目标
+        self.getters: list[dict[str, str | int]] = [] # 获取了信息的模块名
         print(f"{source} -> {self} -> {destinations}")
+        self.send_time = int(time.time())
     
     def __repr__(self):
         kwrepr = "{"
@@ -30,7 +34,42 @@ class Message:
             print(f"{getter} <x {self} (-> {[destination.value for destination in self.destinations]})")
             return {}
         print(f"{getter} <- {self}")
+        self.getters.append({
+            'name': getter.name,
+            'time': int(time.time())
+        })
         return self.kwargs
+    
+    def get_dict_repr(self) -> dict[str, Any]:
+        """
+        {
+            "message_name": "【信息名】",
+            "send_time": 【发送时间戳，整数】,
+            "message_type": "【信息类型，DATA或者SIGNAL】",
+            "message_source": "【消息来源模块名】",
+            "message_destinations": [
+                "【消息目的地名】"
+            ],
+            "message": [
+                {"key": "键", "value": "值"},...
+            ],
+            "getters": [
+                {"name": "【获取者名】", "time": 【获取时间戳，整数】},...
+            ]
+        }
+        """
+        return {
+            "message_name": get_type_name(self),
+            "send_time": self.send_time,
+            "message_type": self.message_type.value,
+            "message_source": self.source.name,
+            "message_destinations": [destination.value for destination in self.destinations],
+            "message": [
+                {"key": k, "value": repr(v)}
+                for k, v in self.kwargs.items()
+            ],
+            "getters": self.getters
+        }
 
 class ASRActivated(Message):
     """

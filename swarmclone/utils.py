@@ -162,3 +162,5 @@ def get_voices():
     except RuntimeError:
         # 如果没有事件循环，创建一个新的
         return asyncio.run(_get_voices())
+
+get_type_name = lambda obj: type(obj).__name__

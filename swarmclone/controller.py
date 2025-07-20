@@ -6,7 +6,8 @@ from starlette.responses import JSONResponse
 
 import asyncio
 from typing import Any
-from dataclasses import asdict, fields, MISSING
+from dataclasses import fields, MISSING
+from collections import deque
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -29,6 +30,7 @@ class Controller:
         self.module_tasks: list[asyncio.Task[Any]] = []
         self.handler_tasks: list[asyncio.Task[Any]] = []
         self.agent: ModuleBase = ControllerDummy()
+        self.messages: deque[Message] = deque(maxlen=200)
 
     def add_module(self, module: ModuleBase):
         """
@@ -299,7 +301,33 @@ class Controller:
             response = JSONResponse({"version": __version__})
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
-    
+
+        @self.app.get("/api/get_messages", response_class=JSONResponse)
+        async def get_messages():
+            """
+            [
+                {
+                    "message_name": "【信息名】",
+                    "send_time": 【发送时间戳，整数】,
+                    "message_type": "【信息类型，DATA或者SIGNAL】",
+                    "message_source": "【消息来源模块名】",
+                    "message_destinations": [
+                        "【消息目的地名】"
+                    ],
+                    "message": [
+                        {"key": "键", "value": "值"},...
+                    ],
+                    "getters": [
+                        {"name": "【获取者名】", "time": 【获取时间戳，整数】},...
+                    ]
+                },...
+            ]
+            """
+            res: list[dict[str, Any]] = []
+            for message in self.messages:
+                res.append(message.get_dict_repr())
+            return JSONResponse(res)
+
     async def handle_message(self, message: Message):
         for destination in message.destinations:
             for module_destination in self.modules[destination]:
@@ -352,4 +380,5 @@ class Controller:
     async def handle_module(self, module: ModuleBase):
         while True:
             result: Message = await module.results_queue.get()
+            self.messages.append(result)
             await self.handle_message(result)

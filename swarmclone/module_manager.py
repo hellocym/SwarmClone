@@ -16,10 +16,6 @@ class ModuleManager(type):
 
 ModuleType = ModuleManager
 
-module_classes: dict[ModuleRoles, dict[str, ModuleType]] = {
-    role: {} for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
-}
-
 @dataclass
 class ModuleConfig:
     """默认配置——没有配置项"""
@@ -48,9 +44,106 @@ class ModuleBase(metaclass=ModuleManager):
     def __repr__(self):
         return f"<{self.role} {self.name}>"
 
+    @classmethod
+    def get_config_schema(cls) -> dict[str, Any]:
+        """
+        获取模块的配置信息模式
+        
+        返回一个包含模块配置信息的字典，结构如下：
+        {
+            "module_name": 模块名称,
+            "desc": 模块描述,
+            "config": [配置项列表...]
+        }
+        """
+        from dataclasses import fields, MISSING
+        from .utils import escape_all
+        
+        config_info = {
+            "module_name": cls.name,
+            "desc": cls.__doc__ or "",
+            "config": []
+        }
+        
+        # 跳过占位模块
+        if "dummy" in cls.name.lower():
+            return config_info
+            
+        for field in fields(cls.config_class):
+            name = field.name
+            default = ""
+            
+            # 将各种类型转换为字符串表示
+            _type: str
+            raw_type = field.type
+            if isinstance(raw_type, type):
+                raw_type = raw_type.__name__
+            if "int" in raw_type and "float" not in raw_type:  # 只在一个参数只能是int而不能是float时确定其为int
+                _type = "int"
+            elif "float" in raw_type:
+                _type = "float"
+            elif "bool" in raw_type:
+                _type = "bool"
+            else:
+                _type = "str"
+            
+            selection = field.metadata.get("selection", False)
+            if selection:
+                _type = "selection"  # 如果是选择项则不管类型如何
+            
+            required = field.metadata.get("required", False)
+            desc = field.metadata.get("desc", "")
+            options = field.metadata.get("options", [])
+            
+            if field.default is not MISSING and (default := field.default) is not None:
+                pass
+            elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
+                pass
+            else:  # 无默认值则生成对应类型的空值
+                if _type == "str":
+                    default = ""
+                elif _type == "int":
+                    default = 0
+                elif _type == "float":
+                    default = 0.0
+                elif _type == "bool":
+                    default = False
+                elif _type == "selection":
+                    default = options[0]["value"] if options else ""
+                    
+            if isinstance(default, str):
+                default = escape_all(default)  # 进行转义
+            
+            # 如果有的话，提供最大最小值和步长
+            minimum = field.metadata.get("min")
+            maximum = field.metadata.get("max")
+            step = field.metadata.get("step")
+            
+            # 是否需要隐藏输入值？
+            password = field.metadata.get("password", False)
+            
+            config_info["config"].append({
+                "name": name,
+                "type": _type,
+                "desc": desc,
+                "required": required,
+                "default": default,
+                "options": options,
+                "min": minimum,
+                "max": maximum,
+                "step": step,
+                "password": password
+            })
+        
+        return config_info
+
     async def process_task(self, task: Message | None) -> Message | None:
         """
         处理任务的方法，每个循环会自动调用
         返回None表示不需要返回结果，返回Message对象则表示需要返回结果，返回的对象会自动放入results_queue中。
         也可以选择手动往results_queue中put结果然后返回None
         """
+
+module_classes: dict[ModuleRoles, dict[str, ModuleBase]] = {
+    role: {} for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
+}

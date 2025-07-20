@@ -6,7 +6,6 @@ from starlette.responses import JSONResponse
 
 import asyncio
 from typing import Any
-from dataclasses import fields, MISSING
 from collections import deque
 
 import uvicorn
@@ -145,76 +144,14 @@ class Controller:
                 config.append({"role_name": role.value, "modules": []})
                 for module_name, module_class in role_module_classes.items():
                     if "dummy" in module_name.lower():
-                        continue # 占位模块不应被展示出来
+                        continue  # 占位模块不应被展示出来
+                    # 使用ModuleBase的get_config_schema方法获取配置信息
+                    schema = module_class.get_config_schema()
                     config[-1]["modules"].append({
-                        "module_name": module_name,
-                        "desc": module_class.__doc__ or "",
-                        "config": []
+                        "module_name": schema["module_name"],
+                        "desc": schema["desc"],
+                        "config": schema["config"]
                     })
-                    for field in fields(module_class.config_class): # config_class是被其元类注入的，是dataclass
-                        name = field.name
-                        default = ""
-                        # 将各种类型转换为字符串表示
-                        _type: str
-                        raw_type = field.type
-                        if isinstance(raw_type, type):
-                            raw_type = raw_type.__name__
-                        if "int" in raw_type and "float" not in raw_type: # 只在一个参数只能是int而不能是float时确定其为int
-                            _type = "int" # TODO: if "int" == raw_type好像也行？
-                        elif "float" in raw_type:
-                            _type = "float"
-                        elif "bool" in raw_type:
-                            _type = "bool"
-                        else:
-                            _type = "str"
-                        selection = field.metadata.get("selection", False)
-                        if selection:
-                            _type = "selection" # 如果是选择项则不管类型如何
-                        
-                        required = field.metadata.get("required", False)
-
-                        desc = field.metadata.get("desc", "")
-
-                        options = field.metadata.get("options", [])
-
-                        if field.default is not MISSING and (default := field.default) is not None:
-                            pass
-                        elif field.default_factory is not MISSING and (default := field.default_factory()) is not None:
-                            pass
-                        else: # 无默认值则生成对应类型的空值
-                            if _type == "str":
-                                default = ""
-                            elif _type == "int":
-                                default = 0
-                            elif _type == "float":
-                                default = 0.0
-                            elif _type == "bool":
-                                default = False
-                            elif _type == "selection":
-                                default = options[0]["value"]
-                        if isinstance(default, str):
-                            default = escape_all(default) # 进行转义
-                        
-                        # 如果有的话，提供最大最小值和步长
-                        minimum = field.metadata.get("min")
-                        maximum = field.metadata.get("max")
-                        step = field.metadata.get("step")
-
-                        # 是否需要隐藏输入值？
-                        password = field.metadata.get("password", False)
-
-                        config[-1]["modules"][-1]["config"].append({
-                            "name": name,
-                            "type": _type,
-                            "desc": desc,
-                            "required": required,
-                            "default": default,
-                            "options": options,
-                            "min": minimum,
-                            "max": maximum,
-                            "step": step,
-                            "password": password
-                        })
             return JSONResponse(config)
         
         @self.app.post("/start", response_class=JSONResponse)

@@ -29,6 +29,7 @@ class ModuleBase(metaclass=ModuleManager):
         self.task_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.results_queue: asyncio.Queue[Message] = asyncio.Queue(maxsize=128)
         self.running = False
+        self.err: BaseException | None = None
     
     async def run(self) -> None:
         while True:

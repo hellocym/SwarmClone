@@ -62,6 +62,8 @@ class Controller:
         /api/startup_param: 获取配置信息(GET)
         /api/start: 加载配置信息并启动(POST)
         /api/get_status: 获取状态(GET)
+        /api/get_messages: 获取最新信息(GET)
+        /health: 检查是否在线(GET)
         """
         self.app.mount("/assets", StaticFiles(directory="panel/dist/assets"), name="assets")
 
@@ -76,6 +78,10 @@ class Controller:
         async def root():
             return HTMLResponse(open("panel/dist/index.html").read())
         
+        @self.app.get("/health")
+        async def health():
+            return JSONResponse({"status": "ok"})
+
         @self.app.get("/api/get_status")
         async def get_status():
             """

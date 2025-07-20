@@ -64,7 +64,8 @@ class LLMBaseConfig(ModuleConfig):
     })
     system_prompt: str = field(default="""你是一只猫娘""", metadata={
         "required": False,
-        "desc": "系统提示词"
+        "desc": "系统提示词",
+        "multiline": True
     })  # TODO：更好的系统提示、MCP支持
 
 class LLMBase(ModuleBase):

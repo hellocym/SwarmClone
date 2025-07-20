@@ -122,6 +122,9 @@ class ModuleBase(metaclass=ModuleManager):
             
             # 是否需要隐藏输入值？
             password = field.metadata.get("password", False)
+
+            # 是否是多行文本？
+            multiline = field.metadata.get("multiline", False)
             
             config_info["config"].append({
                 "name": name,
@@ -133,7 +136,8 @@ class ModuleBase(metaclass=ModuleManager):
                 "min": minimum,
                 "max": maximum,
                 "step": step,
-                "password": password
+                "password": password,
+                "multiline": multiline
             })
         
         return config_info

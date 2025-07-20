@@ -188,7 +188,19 @@ class LLMTransformers(LLMBase):
                         if (sentence := sentence.strip()):
                             yield sentence, await self.get_emotion(sentence)
                     generating_sentence = sentences[-1]
-        finally: # 被中断或者生成完毕
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(repr(e))
+            yield f"Someone tell the developer that there's something wrong with my AI: {repr(e)}", {
+                "neutral": 1,
+                "like": 0,
+                "sad": 0,
+                "disgust": 0,
+                "anger": 0,
+                "happy": 0
+            }
+        finally:
             if not generation_task.done():
                 generation_task.cancel()
-            yield generating_sentence, await self.get_emotion(generating_sentence)
+        yield generating_sentence, await self.get_emotion(generating_sentence)

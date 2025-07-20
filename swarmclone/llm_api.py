@@ -146,4 +146,12 @@ class LLMOpenAI(LLMBase):
             pass
         except Exception as e:
             print(repr(e))
+            yield f"Someone tell the developer that there's something wrong with my AI: {repr(e)}", {
+                "neutral": 1,
+                "like": 0,
+                "sad": 0,
+                "disgust": 0,
+                "anger": 0,
+                "happy": 0
+            }
         yield generating_sentence, await self.get_emotion(generating_sentence)

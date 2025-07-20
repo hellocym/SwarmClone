@@ -344,9 +344,15 @@ class Controller:
     
     async def handle_module(self, module: ModuleBase, module_task: asyncio.Task[None]):
         while True:
-            if (err := module_task.exception()) is not None:
-                print(f"{module}模块任务异常：{err}")
-                module.err = err
+            try:
+                if (err := module_task.exception()) is not None:
+                    print(f"{module}模块任务异常：{err}")
+                    module.err = err
+                    module.running = False
+                    break
+            except asyncio.InvalidStateError:
+                pass
+            except asyncio.CancelledError:
                 module.running = False
                 break
             result: Message = await module.results_queue.get()

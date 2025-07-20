@@ -29,7 +29,7 @@ class Controller:
         self.module_tasks: list[asyncio.Task[Any]] = []
         self.handler_tasks: list[asyncio.Task[Any]] = []
         self.agent: ModuleBase = ControllerDummy()
-        self.messages: deque[Message] = deque(maxlen=200)
+        self.messages_buffer: deque[Message] = deque(maxlen=200)
 
     def add_module(self, module: ModuleBase):
         """
@@ -261,8 +261,9 @@ class Controller:
             ]
             """
             res: list[dict[str, Any]] = []
-            for message in self.messages:
+            for message in self.messages_buffer:
                 res.append(message.get_dict_repr())
+            self.messages_buffer.clear()
             return JSONResponse(res)
 
     async def handle_message(self, message: Message):
@@ -317,5 +318,5 @@ class Controller:
     async def handle_module(self, module: ModuleBase):
         while True:
             result: Message = await module.results_queue.get()
-            self.messages.append(result)
+            self.messages_buffer.append(result)
             await self.handle_message(result)

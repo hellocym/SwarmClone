@@ -345,17 +345,14 @@ class Controller:
     
     async def handle_module(self, module: ModuleBase, module_task: asyncio.Task[None]):
         while True:
-            try:
-                if (err := module_task.exception()) is not None:
+            if module_task.done():
+                module.running = False
+                if (not module_task.cancelled()) and ((err := module_task.exception()) is not None):
                     print(f"{module}模块任务异常：{err}")
                     module.err = err
-                    module.running = False
-                    break
-            except asyncio.InvalidStateError:
-                pass
-            except asyncio.CancelledError:
-                module.running = False
                 break
-            result: Message = await module.results_queue.get()
-            self.messages_buffer.append(result)
-            await self.handle_message(result)
+            if not module.results_queue.empty():
+                result = module.results_queue.get_nowait()
+                self.messages_buffer.append(result)
+                await self.handle_message(result)
+            await asyncio.sleep(0.05) # 以防空转占满 CPU

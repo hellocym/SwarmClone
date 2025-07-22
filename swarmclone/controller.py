@@ -224,7 +224,7 @@ class Controller:
 
         @self.app.post("/api/stop")
         async def stop():
-            self.stop_modules()
+            await self.stop_modules()
             return Response()
 
         @self.app.post("/api")
@@ -310,7 +310,7 @@ class Controller:
             if len(modules) > 0:
                 print(f"{module_role.value}模块已启动")
 
-    def stop_modules(self):
+    async def stop_modules(self):
         for task in self.module_tasks:
             print(f"停止{task.get_name()}模块任务")
             task.cancel()
@@ -322,6 +322,17 @@ class Controller:
                 module.running = False
         self.module_tasks.clear()
         self.handler_tasks.clear()
+        self.messages_buffer.clear()
+        print("等待剩余协程退出")
+        tasks = [
+            t for t in asyncio.all_tasks()
+            if t is not asyncio.current_task()
+            and t.get_name() != "ROOT SERVER" # 不要取消掉服务器协程
+        ]
+        if tasks:
+            for t in tasks:
+                t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     def run(self):
         self.start_modules()
@@ -334,11 +345,12 @@ class Controller:
         )
         server = uvicorn.Server(uvcorn_config)
         loop = asyncio.get_event_loop()
-        server_task = loop.create_task(server.serve())
+
+        server_task = loop.create_task(server.serve(), name="ROOT SERVER")
         try:
             loop.run_until_complete(server_task)
         except KeyboardInterrupt:
-            self.stop_modules()
+            loop.run_until_complete(self.stop_modules())
             server_task.cancel()
         finally:
             loop.run_until_complete(server.shutdown())

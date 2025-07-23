@@ -23,8 +23,8 @@ SwarmClone is a fully open-source-code, highly customizable framework for develo
 
 ### Key Features
 1. ✅ **Self-Controlled Architecture**: Fully open-source from core logic to application layer
-2. ✅ **Flexible AI Model Support**: Use our MiniLM2 language model or integrate third-party LLMs (ChatGPT, Claude, etc.) via local/API calls
-3. ✅ **Comprehensive Streaming Features**: Real-time danmu interaction, gift response, viewer mentions, and core streaming scenarios
+2. ✅ **Flexible AI Model Support**: Use our MiniLM2 language model or integrate third-party LLMs (ChatGPT, Claude, etc.) via local/remote API calls
+3. ✅ **Comprehensive Streaming Features**: Real-time core streaming scenarios like danmu interaction
 4. ✅ **Modular Design**: Components can be freely replaced for custom implementations
 
 ---
@@ -63,7 +63,6 @@ SwarmClone is a fully open-source-code, highly customizable framework for develo
    cd SwarmClone
    git submodule update --init
    ```
-   > 💡 Reserve at least 10GB disk space for local model deployments
 
 ### 2. Install System Dependencies:
    **Ubuntu/Debian**
@@ -92,7 +91,8 @@ SwarmClone is a fully open-source-code, highly customizable framework for develo
    UV_TORCH_BACKEND=auto pip install torch torchaudio
    uv sync --group linux --active --no-build-isolation
    ```
-   > 💡 For QQ bot functionality: `uv pip install ncatbot`
+   > 💡 For QQ bot functionality, QQNT, napcat and ncatbot is required. To install ncatbot: `uv pip install ncatbot`
+   > ⚠️ `uv pip` is used here because of known dependency issues (`uv add` wouldn't work because of unsatisfiable dependency). Open an issue if you encounter any problems.
 
 ### 4. Configure Node.js:
    ```console

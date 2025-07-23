@@ -164,8 +164,8 @@ class Controller:
                 
                 config.append({"role_name": role.value, "allowed_num": allowed_num, "modules": []})
                 for module_name, module_class in role_module_classes.items():
-                    if "dummy" in module_name.lower():
-                        continue  # 占位模块不应被展示出来
+                    if "dummy" in module_name.lower() or "base" in module_name.lower():
+                        continue  # 占位模块和模块基类不应被展示出来
                     # 使用ModuleBase的get_config_schema方法获取配置信息
                     schema = module_class.get_config_schema()
                     config[-1]["modules"].append({

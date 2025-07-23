@@ -91,7 +91,7 @@
    ```console
    sudo pacman -S --noconfirm base-devel python python-pip cmake mesa glu freeglut git wget
    ```
-   > 💡对于使用其他包管理工具的发行版，您需要自行安装上述依赖项。
+   >💡对于使用其他包管理工具的发行版，您需要自行安装上述依赖项。
 
 ### 3. 设置Python环境
 
@@ -111,9 +111,9 @@
       ```
    4. 同步项目依赖
       ```console
-      uv sync --group linux --active --no-build-isolation
+      uv sync --active --no-build-isolation
       ```
-   >💡若需要使用qqbot功能，你还需要安装ncatbot：`uv pip install ncatbot`
+   >💡若需要使用qqbot功能，你还需要安装QQNT、napcat和ncatbot。使用`uv pip install ncatbot`可安装ncatbot。
 ### 4. 设置Node.js环境
 
 1. 请确保您安装了符合要求的`Node.js（22.0+）`和`npm（10.0+）`

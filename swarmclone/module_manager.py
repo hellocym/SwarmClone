@@ -76,9 +76,7 @@ class ModuleBase(metaclass=ModuleManager):
             
             # 将各种类型转换为字符串表示
             _type: str
-            raw_type = field.type
-            if isinstance(raw_type, type):
-                raw_type = raw_type.__name__
+            raw_type = str(field.type)
             if "int" in raw_type and "float" not in raw_type:  # 只在一个参数只能是int而不能是float时确定其为int
                 _type = "int"
             elif "float" in raw_type:

@@ -4,6 +4,7 @@ import os
 import time
 import json
 import hashlib
+import re
 from typing import Any
 from dataclasses import dataclass, field
 from contextlib import asynccontextmanager
@@ -88,7 +89,7 @@ class ChatCompletionStreamResponse(BaseModel):
 class LocalLLMConfig(ModuleConfig):
     model_path: str = field(default="~/.swarmclone/local_models", metadata={
         "required": False,
-        "desc": "模型路径"
+        "desc": "模型文件夹路径，模型文件会被下载到该文件夹下名为[模型id的md5值]的文件夹内"
     })
     model_id: str = field(default="", metadata={
         "required": True,
@@ -134,6 +135,7 @@ class LocalLLMConfig(ModuleConfig):
     })
 
 class LocalLLM(ModuleBase):
+    """在本地运行一个 LLM 服务器，仅用于纯文本模型，可代替 Ollama 和 vLLM"""
     role: ModuleRoles = ModuleRoles.PLUGIN
     config_class = LocalLLMConfig
     config: config_class
@@ -235,6 +237,213 @@ class LocalLLM(ModuleBase):
         """计算文本的token数量"""
         return len(self.tokenizer.encode(text))
 
+    def _detect_tool_format(self, response_text: str) -> str:
+        """检测响应中使用的工具调用格式"""
+        response_text = response_text.strip()
+        
+        # 检测OpenAI格式 (JSON对象)
+        if response_text.startswith('{'):
+            return "json_object"
+        
+        # 检测XML格式
+        if '<tool_call>' in response_text and '</tool_call>' in response_text:
+            return "xml"
+        
+        # 检测函数调用标记
+        if 'functions.' in response_text and '(' in response_text:
+            return "function_call"
+        
+        # 检测代码块格式
+        if '```json' in response_text.lower():
+            return "code_block"
+        
+        # 检测特殊标记格式
+        if '<|im_start|>' in response_text and 'tool_call' in response_text:
+            return "chatml"
+        
+        # 检测纯JSON数组
+        if response_text.startswith('[') and '"function"' in response_text:
+            return "json_array"
+        
+        return "none"
+
+    def _parse_tool_calls_generic(self, response_text: str) -> tuple[str, list[dict[str, Any]] | None]:
+        """通用工具调用解析器，支持多种格式"""
+        tool_calls = None
+        
+        format_type = self._detect_tool_format(response_text)
+        
+        if format_type == "xml":
+            # XML格式解析
+            tool_call_pattern = r'<tool_call>(.*?)</tool_call>'
+            tool_call_matches = re.findall(tool_call_pattern, response_text, re.DOTALL)
+            
+            if tool_call_matches:
+                tool_calls = []
+                for tool_call_str in tool_call_matches:
+                    try:
+                        tool_call_data = json.loads(tool_call_str.strip())
+                        if "name" in tool_call_data and "arguments" in tool_call_data:
+                            tool_calls.append({
+                                "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                                "type": "function",
+                                "function": {
+                                    "name": tool_call_data["name"],
+                                    "arguments": json.dumps(tool_call_data["arguments"])
+                                }
+                            })
+                    except json.JSONDecodeError:
+                        continue
+                
+                response_text = re.sub(tool_call_pattern, '', response_text, flags=re.DOTALL).strip()
+        
+        elif format_type == "json_object":
+            # 纯JSON对象格式
+            try:
+                json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+                matches = re.findall(json_pattern, response_text)
+                
+                for match in matches:
+                    try:
+                        data = json.loads(match)
+                        if "name" in data and ("arguments" in data or "parameters" in data):
+                            if tool_calls is None:
+                                tool_calls = []
+                            
+                            # 兼容arguments和parameters两种写法
+                            args = data.get("arguments", data.get("parameters", {}))
+                            tool_calls.append({
+                                "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                                "type": "function",
+                                "function": {
+                                    "name": data["name"],
+                                    "arguments": json.dumps(args)
+                                }
+                            })
+                    except json.JSONDecodeError:
+                        continue
+            except Exception:
+                pass
+        
+        elif format_type == "json_array":
+            # JSON数组格式
+            try:
+                json_pattern = r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]'
+                matches = re.findall(json_pattern, response_text)
+                
+                for match in matches:
+                    try:
+                        tools = json.loads(match)
+                        if isinstance(tools, list):
+                            for tool in tools:
+                                if "name" in tool and ("arguments" in tool or "parameters" in tool):
+                                    if tool_calls is None:
+                                        tool_calls = []
+                                    
+                                    args = tool.get("arguments", tool.get("parameters", {}))
+                                    tool_calls.append({
+                                        "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                                        "type": "function",
+                                        "function": {
+                                            "name": tool["name"],
+                                            "arguments": json.dumps(args)
+                                        }
+                                    })
+                    except json.JSONDecodeError:
+                        continue
+            except Exception:
+                pass
+        
+        elif format_type == "code_block":
+            # 代码块中的JSON
+            code_block_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
+            matches = re.findall(code_block_pattern, response_text, re.IGNORECASE)
+            
+            for match in matches:
+                try:
+                    data = json.loads(match.strip())
+                    if isinstance(data, dict) and "name" in data:
+                        if tool_calls is None:
+                            tool_calls = []
+                        
+                        args = data.get("arguments", data.get("parameters", {}))
+                        tool_calls.append({
+                            "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                            "type": "function",
+                            "function": {
+                                "name": data["name"],
+                                "arguments": json.dumps(args)
+                            }
+                        })
+                        
+                        # 移除代码块
+                        response_text = re.sub(code_block_pattern, '', response_text, flags=re.IGNORECASE).strip()
+                        break
+                except json.JSONDecodeError:
+                    continue
+        
+        elif format_type == "function_call":
+            # 函数调用语法
+            function_call_pattern = r'functions\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)'
+            matches = re.findall(function_call_pattern, response_text)
+            
+            if matches:
+                tool_calls = []
+                for func_name, args_str in matches:
+                    try:
+                        # 尝试解析参数
+                        if args_str.strip():
+                            args = json.loads(args_str)
+                        else:
+                            args = {}
+                        
+                        tool_calls.append({
+                            "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                            "type": "function",
+                            "function": {
+                                "name": func_name,
+                                "arguments": json.dumps(args)
+                            }
+                        })
+                    except json.JSONDecodeError:
+                        # 如果解析失败，将参数作为空对象
+                        tool_calls.append({
+                            "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                            "type": "function",
+                            "function": {
+                                "name": func_name,
+                                "arguments": "{}"
+                            }
+                        })
+                
+                response_text = re.sub(function_call_pattern, '', response_text).strip()
+        
+        elif format_type == "chatml":
+            # ChatML格式
+            chatml_pattern = r'<\|im_start\|>assistant[\s\S]*?(\{[\s\S]*?\})[\s\S]*?<\|im_end\|>'
+            matches = re.findall(chatml_pattern, response_text)
+            
+            for match in matches:
+                try:
+                    data = json.loads(match.strip())
+                    if "name" in data:
+                        if tool_calls is None:
+                            tool_calls = []
+                        
+                        args = data.get("arguments", data.get("parameters", {}))
+                        tool_calls.append({
+                            "id": f"call_{int(time.time())}_{len(tool_calls)}",
+                            "type": "function",
+                            "function": {
+                                "name": data["name"],
+                                "arguments": json.dumps(args)
+                            }
+                        })
+                except json.JSONDecodeError:
+                    continue
+        
+        return response_text.strip(), tool_calls
+
     async def _generate_response(
         self, 
         messages: list[ChatCompletionMessage], 
@@ -282,10 +491,10 @@ class LocalLLM(ModuleBase):
         # 在线程池中执行阻塞调用
         response = await asyncio.get_event_loop().run_in_executor(None, _generate_sync)
         
-        # 由于使用chat template，工具调用由模型直接处理
-        tool_calls = None
+        # 使用通用工具调用解析器
+        response_text, tool_calls = self._parse_tool_calls_generic(response.strip())
         
-        return response.strip(), tool_calls
+        return response_text, tool_calls
 
     async def _generate_stream(
         self, 
@@ -470,7 +679,7 @@ class LocalLLM(ModuleBase):
         }
         yield f"data: {json.dumps(start_data)}\n\n"
 
-        # 流式生成响应
+        # 流式生成完整响应，然后解析工具调用
         response_text = ""
         async for chunk in self._generate_stream(
             messages=request.messages,
@@ -490,8 +699,27 @@ class LocalLLM(ModuleBase):
                 }
                 yield f"data: {json.dumps(chunk_data)}\n\n"
 
+        # 使用通用工具调用解析器
+        response_text, tool_calls = self._parse_tool_calls_generic(response_text)
+
+        if tool_calls:
+            tool_call_data = {
+                'id': response_id,
+                'object': 'chat.completion.chunk',
+                'created': created,
+                'model': request.model,
+                'choices': [{
+                    'index': 0, 
+                    'delta': {
+                        'tool_calls': tool_calls
+                    }, 
+                    'finish_reason': 'tool_calls'
+                }]
+            }
+            yield f"data: {json.dumps(tool_call_data)}\n\n"
+
         # 发送结束消息
-        finish_reason = "stop"
+        finish_reason = "tool_calls" if tool_calls else "stop"
         end_data = {
             'id': response_id,
             'object': 'chat.completion.chunk',

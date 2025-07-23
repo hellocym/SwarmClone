@@ -24,7 +24,6 @@ from .constants import *
 from .messages import *
 from .tts_cosyvoice import TTSCosyvoice
 from .frontend_socket import FrontendSocket
-from .llm_transformers import LLMTransformers
 from .llm_api import LLMOpenAI
 from .bilibili_chat import BiliBiliChat
 from .asr import ASRSherpa

@@ -5,16 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-]
-
-[tool.nv]
-preview = true
-
-[dependency-groups]
-dev = [
-    "ipython>=8.37.0",
-]
-linux = [
     "jieba>=0.42.1",
     "accelerate>=1.8.1",
     "bilibili-api-python>=17.3.0",
@@ -48,40 +38,15 @@ linux = [
     "srt>=3.5.3",
     "pygame>=2.6.1",
     "edge-tts>=7.0.2",
+    "mcp>=1.12.1",
 ]
-windows = [
-    "jieba>=0.42.1",
-    "accelerate>=1.8.1",
-    "bilibili-api-python>=17.3.0",
-    "dragonmapper>=0.3.0",
-    "fastapi>=0.115.14",
-    "hanziconv>=0.3.2",
-    "joblib==1.4.2",
-    "loguru>=0.7.3",
-    "matplotlib>=3.10.3",
-    "modelscope>=1.22.3",
-    "openai>=1.95.1",
-    "playsound",
-    "pynini>=2.1.6",
-    "sc-cosyvoice",
-    "sherpa-onnx>=1.12.6",
-    "sounddevice>=0.5.2",
-    "soundfile>=0.13.1",
-    "spacy-pkuseg>=1.0.0",
-    "textgrid>=1.6.1",
-    "tomli>=2.2.1",
-    "tqdm>=4.67.1",
-    "transformers>=4.48.3",
-    "uvicorn>=0.35.0",
-    "zhconv>=1.4.3",
-    "torchaudio",
-    "torch",
-    "live2d-py>=0.5.3.4",
-    "pyside6>=6.9.1",
-    "markdown>=3.8.2",
-    "srt>=3.5.3",
-    "pygame>=2.6.1",
-    "edge-tts>=7.0.2",
+
+[tool.nv]
+preview = true
+
+[dependency-groups]
+dev = [
+    "ipython>=8.37.0",
 ]
 
 [tool.uv.sources]

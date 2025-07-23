@@ -23,7 +23,7 @@ SwarmClone is a fully open-source-code, highly customizable framework for develo
 
 ### Key Features
 1. ✅ **Self-Controlled Architecture**: Fully open-source from core logic to application layer
-2. ✅ **Flexible AI Model Support**: Use our MiniLM2 language model or integrate third-party LLMs (ChatGPT, Claude, etc.) via local/remote API calls
+2. ✅ **Flexible AI Model Support**: Adapt OpenAI Chat Completion API, able to use our MiniLM2 language model or other third-party LLMs (Qwen, DeepSeek, etc.)
 3. ✅ **Comprehensive Streaming Features**: Real-time core streaming scenarios like danmu interaction
 4. ✅ **Modular Design**: Components can be freely replaced for custom implementations
 

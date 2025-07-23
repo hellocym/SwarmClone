@@ -22,7 +22,7 @@
 
 ### 特色
 1. ✅**自主可控的核心架构**：从底层交互逻辑到上层应用全部开源，开发者可以完全掌控系统行为
-2. ✅**灵活的AI模型支持**：既可以使用我们自主研发的MiniLM2语言模型，也能轻松接入ChatGPT、Claude等第三方LLM，支持本地/远程API调用
+2. ✅**灵活的AI模型支持**：适配 OpenAI Chat Completion API，既可以使用我们自主研发的MiniLM2语言模型，也能轻松接入Qwen、DeepSeek等第三方LLM
 3. ✅**完善的直播功能**：支持弹幕实时互动等核心直播场景
 4. **模块化设计理念**：各功能组件可自由替换，方便开发者按需定制
 
@@ -113,7 +113,7 @@
       uv sync --active --no-build-isolation
       ```
    >💡若需要使用qqbot功能，你还需要安装QQNT、napcat和ncatbot。使用`uv pip install ncatbot`可安装ncatbot。
-   >⚠️ 由于已知依赖问题，`uv pip` 被用于安装 ncatbot （依赖版本互相矛盾导致`uv add`无法安装 ncatbot）。如果您遇到任何问题，请打开一个 issue。
+   >⚠️ 由于已知依赖问题，`uv pip` 被用于安装 ncatbot（依赖版本互相矛盾导致`uv add`无法安装 ncatbot）。如果您遇到任何问题，请打开一个 issue。
 
 ### 4. 设置Node.js环境
 

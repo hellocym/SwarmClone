@@ -20,7 +20,7 @@ from .messages import *
 from .utils import *
 
 @dataclass
-class LLMOpenAIConfig(ModuleConfig):
+class LLMConfig(ModuleConfig):
     chat_maxsize: int = field(default=20, metadata={
         "required": False,
         "desc": "弹幕接受数量上限",
@@ -137,9 +137,9 @@ class LLMOpenAIConfig(ModuleConfig):
         "step": 0.1  # 步长为 0.1
     })
 
-class LLMOpenAI(ModuleBase):
+class LLM(ModuleBase):
     role: ModuleRoles = ModuleRoles.LLM
-    config_class = LLMOpenAIConfig
+    config_class = LLMConfig
     config: config_class
     def __init__(self, config: config_class | None = None, **kwargs):
         super().__init__(config, **kwargs)
@@ -397,7 +397,7 @@ class LLMOpenAI(ModuleBase):
                 return ChatCompletionAssistantMessageParam(
                     role="assistant", 
                     content=str(content),
-                    tool_calls=rest.get('tool_calls')
+                    tool_calls=rest.get('tool_calls') or []
                 )
             case {'role': 'system', 'content': content}:
                 return ChatCompletionSystemMessageParam(role="system", content=str(content))
@@ -524,7 +524,6 @@ class LLMOpenAI(ModuleBase):
                 "finish_reason": "stop"
             }
 
-
     async def iter_sentences_emotions(self):
         ## By: KyvYang + Claude Code (Powered by Kimi-K2)
         generating_sentence = ""
@@ -622,7 +621,7 @@ class LLMOpenAI(ModuleBase):
                             self.generated_text += tool_hint
                             
                         except Exception as e:
-                            error_hint = f"<调用{tool_name}工具失败：{e}>"
+                            error_hint = f"<调用 {tool_name} 工具失败：{e}>"
                             generating_sentence += error_hint
                             self.generated_text += error_hint
                     

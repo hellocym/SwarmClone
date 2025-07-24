@@ -8,7 +8,7 @@ import live2d.v3 as live2d_v3
 from PySide6.QtWidgets import *
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtGui import *
-from PySide6.QtCore import QTimerEvent, Qt
+from PySide6.QtCore import QPoint, QTimerEvent, Qt
 from OpenGL.GL import *
 import pygame
 from markdown import markdown
@@ -171,13 +171,15 @@ class FrontendWindow(QMainWindow):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
         self.setStyleSheet("background: transparent;")
+
+        self._drag_pos: QPoint | None = None
     
     def mousePressEvent(self, e: QMouseEvent):
         if e.button() == Qt.MouseButton.LeftButton:
             self._drag_pos = e.globalPosition().toPoint()
 
     def mouseMoveEvent(self, e: QMouseEvent):
-        if e.buttons() & Qt.MouseButton.LeftButton:
+        if e.buttons() & Qt.MouseButton.LeftButton and self._drag_pos is not None:
             delta = e.globalPosition().toPoint() - self._drag_pos
             self.move(self.pos() + delta)
             self._drag_pos = e.globalPosition().toPoint()
@@ -265,6 +267,7 @@ class FrontendLive2D(ModuleBase):
                 elif isinstance(task, TTSAlignedAudio):
                     # 若接收到 TTS 对齐信息，将对应消息标注为已生成音频
                     data = task.get_value(self)
+                    data_index: int | None = None
                     for data_index, message in enumerate(self.message_queue):
                         if message["id"] == data["id"] and message["aligned_audio"] is None:
                             message["aligned_audio"] = {
@@ -273,9 +276,10 @@ class FrontendLive2D(ModuleBase):
                             }
                             break
                     # 若后面的信息先收到了生成音频，则将前面的消息缺失的音频信息用缺省值代替
-                    for i in range(data_index):
-                        if self.message_queue[i]["aligned_audio"] is None:
-                            self.message_queue[i]["aligned_audio"] = b""
+                    if data_index is not None:
+                        for i in range(data_index):
+                            if self.message_queue[i]["aligned_audio"] is None:
+                                self.message_queue[i]["aligned_audio"] = b""
                 
                 elif isinstance(task, SongInfo):
                     # 接收歌曲相关信息

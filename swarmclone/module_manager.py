@@ -147,6 +147,6 @@ class ModuleBase(metaclass=ModuleManager):
         也可以选择手动往results_queue中put结果然后返回None
         """
 
-module_classes: dict[ModuleRoles, dict[str, ModuleBase]] = {
+module_classes: dict[ModuleRoles, dict[str, type[ModuleBase]]] = {
     role: {} for role in ModuleRoles if role not in [ModuleRoles.UNSPECIFIED, ModuleRoles.CONTROLLER]
 }

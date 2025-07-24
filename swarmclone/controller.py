@@ -1,9 +1,6 @@
 """
 主控——主控端的核心
 """
-from starlette.responses import JSONResponse
-
-
 import asyncio
 from typing import Any
 from collections import deque
@@ -199,7 +196,7 @@ class Controller:
                 for module in cfg[role].keys():
                     module_config = cfg[role][module]
                     try:
-                        module_class = module_classes[ModuleRoles(role)][module]
+                        module_class: type = module_classes[ModuleRoles(role)][module]
                     except KeyError:
                         missing_modules.append(module)
                         continue

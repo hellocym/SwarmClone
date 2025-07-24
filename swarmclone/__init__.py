@@ -24,11 +24,10 @@ from .constants import *
 from .messages import *
 from .tts_cosyvoice import TTSCosyvoice
 from .frontend_socket import FrontendSocket
-from .llm_api import LLMOpenAI
+from .llm import LLM
 from .bilibili_chat import BiliBiliChat
 from .asr import ASRSherpa
 from .ncatbot_modules import NCatBotFrontend, NCatBotChat
 from .tts_edge import TTSEdge
 from .plugins import *
 from .frontend_live2d import FrontendLive2D
-from .local_llm import LocalLLM

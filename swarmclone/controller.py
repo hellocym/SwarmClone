@@ -81,7 +81,7 @@ class Controller:
             return JSONResponse({"status": "ok"})
 
         @self.app.get("/api/get_status")
-        async def get_status():
+        async def get_status(selected: str = ""):
             """
             [
                 {
@@ -101,10 +101,13 @@ class Controller:
             已加载+已运行=运行中
             """
             # 找到所有模块类
+            names = [s.strip() for s in selected.split(",") if s.strip()]
             status = []
             for role, role_module_classes in module_classes.items():
                 status.append({"role_name": role.value, "modules": []})
                 for module_name, _module_class in role_module_classes.items():
+                    if module_name not in names:
+                        continue
                     status[-1]["modules"].append({
                         "module_name": module_name,
                         "running": False,
@@ -114,11 +117,13 @@ class Controller:
             # 将运行中的模块标记为True
             for role in self.modules:
                 for module in self.modules[role]:
-                    for item in status[-1]["modules"]:
-                        if item["module_name"] == module.name:
-                            item["running"] = module.running
-                            item["loaded"] = True,
-                            item["err"] = None if module.err is None else repr(module.err)
+                    for item in status:
+                        if item["role_name"] == role.value:
+                            for module_item in item["modules"]:
+                                if module_item["module_name"] == module.name:
+                                    module_item["running"] = module.running
+                                    module_item["loaded"] = True
+                                    module_item["err"] = None if module.err is None else repr(module.err)
             return JSONResponse(status)
 
         @self.app.get("/api/startup_param", response_class=JSONResponse)
@@ -217,7 +222,7 @@ class Controller:
             if missing_modules:
                 return JSONResponse(missing_modules, 404)
             self.start_modules()
-            return JSONResponse({"status": "OK"})
+            return JSONResponse({"status": "started"})
 
         @self.app.post("/api/stop")
         async def stop():

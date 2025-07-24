@@ -7,7 +7,6 @@ import edge_tts
 import tempfile
 import torchaudio
 import jieba
-import os
 from time import time
 
 voices = get_voices()
@@ -35,19 +34,28 @@ class TTSEdge(TTSBase):
     async def generate_sentence(self, id: str, content: str, emotions: dict[str, float]) -> TTSAlignedAudio:
         try:
             communicate = edge_tts.Communicate(content, self.voice)
-            with tempfile.TemporaryDirectory() as temp_dir:
-                audio_name = os.path.join(temp_dir, f"voice{time()}.wav")
-                await communicate.save(audio_name)
-                info = torchaudio.info(audio_name)
+            with tempfile.NamedTemporaryFile() as f:
+                await communicate.save(f.name)
+                info = torchaudio.info(f.file)
+                data = torchaudio.load(f.file)
                 duration = info.num_frames / info.sample_rate
                 words = [*jieba.cut(content)]
                 intervals = [
                     {"token": word, "duration": duration / len(words)}
                     for word in words
                 ]
-                with open(audio_name, 'rb') as f:
-                    audio_data = f.read()
+                with tempfile.NamedTemporaryFile() as f_wav:
+                    torchaudio.save(
+                        f_wav.name,
+                        data[0],
+                        sample_rate=info.sample_rate,
+                        format="wav",
+                        encoding="PCM_S",
+                        bits_per_sample=16,
+                    )
+                    audio_data = f_wav.file.read()
         except:
+            import traceback; traceback.print_exc()
             audio_data = b''
             intervals = [{"token": " ", "duration": 0.1}] # 生成错误则返回空数据
         return TTSAlignedAudio(self, id, audio_data, intervals)

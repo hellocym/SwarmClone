@@ -5,6 +5,7 @@ from .messages import *
 from dataclasses import dataclass, field
 import live2d.v2 as live2d_v2
 import live2d.v3 as live2d_v3
+from live2d.utils.lipsync import WavHandler
 from PySide6.QtWidgets import *
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtGui import *
@@ -13,7 +14,7 @@ from OpenGL.GL import *
 import pygame
 from markdown import markdown
 import time
-from io import BytesIO
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 available_models = get_live2d_models()
@@ -117,6 +118,8 @@ class Live2DWidget(QOpenGLWidget):
         else:
             raise ValueError(f"模型文件后缀名错误，必须为 .model.json 或 .model3.json")
         self.live2d.init()
+        self.wav_hander = WavHandler()
+        self.lip_sync_n = 3
     
     def initializeGL(self, /) -> None:
         if self.live2d.LIVE2D_VERSION == 2:
@@ -135,10 +138,19 @@ class Live2DWidget(QOpenGLWidget):
     def paintGL(self, /) -> None:
         self.live2d.clearBuffer()
         self.model.Update()
+        if self.wav_hander.Update():
+            self.model.SetParameterValue("ParamMouthOpenY", self.wav_hander.currentRms * self.lip_sync_n)
         self.model.Draw()
     
     def timerEvent(self, event: QTimerEvent, /) -> None:
         self.update()
+    
+    def speak(self, fname: str):
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load(fname)
+        pygame.mixer.music.play()
+        self.wav_hander.Start(fname)
+        print(self.wav_hander.pcmData)
 
 class FrontendWindow(QMainWindow):
     def __init__(self, model_path: str):
@@ -315,10 +327,11 @@ class FrontendLive2D(ModuleBase):
                         # 如果已经生成了音频，则进行对齐展示
                         if self.message_queue[0]["aligned_audio"]["data"] is not None:
                             # 如果还没有播放音频（音频项还有数据）则播放音频并清空其数据，同时开始计时
-                            pygame.mixer.music.stop()
                             if self.message_queue[0]["aligned_audio"]["data"]: # 可能存有缺省值，只在确定有音频时播放
-                                pygame.mixer.music.load(BytesIO(self.message_queue[0]["aligned_audio"]["data"]))
-                                pygame.mixer.music.play()
+                                with NamedTemporaryFile() as f:
+                                    f.write(self.message_queue[0]["aligned_audio"]["data"])
+                                    f.seek(0)
+                                    self.window.live2d_widget.speak(f.name)
                             self.message_queue[0]["aligned_audio"]["data"] = None
                             self.align_t0 = time.time()
                         if time.time() - self.align_t0 > self.message_queue[0]["aligned_audio"]["align_data"][0]["duration"]:
@@ -342,9 +355,8 @@ class FrontendLive2D(ModuleBase):
                             self.singing = False
                         else:
                             await self.results_queue.put(AudioFinished(self))
-        except Exception as e:
-            print(e)
-            raise
+        except:
+            import traceback; traceback.print_exc()
         finally:
             self.window.live2d_widget.live2d.dispose()
             self.app.quit()

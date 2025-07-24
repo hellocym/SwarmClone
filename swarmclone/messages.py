@@ -143,7 +143,7 @@ class TTSAlignedAudio(Message):
     """
     TTS 音频
     .id：消息的 id（uuid）
-    .audio_data：bytes 音频数据
+    .audio_data：bytes 音频数据 !! 必须是 wav 格式 !!
     .align_data：对齐数据
     """
     def __init__(self, 

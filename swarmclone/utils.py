@@ -58,8 +58,8 @@ def escape_all(s: str) -> str: # By Kimi-K2 & Doubao-Seed-1.6
 
 import ast
 def unescape_all(s: str) -> str: # By Kimi-K2 & KyvYang
-    s = s.replace("\"", "\\\"")
-    return ast.literal_eval(f'"{s}"')
+    s = s.replace("\"", r"\"")
+    return ast.literal_eval(f'"""{s}"""')
 
 import torch
 def get_devices() -> dict[str, str]:
@@ -125,7 +125,7 @@ def parse_srt_to_list(srt_text: str) -> list[dict[str, float | str]]: # By: Kimi
             result.append({'token': '', 'duration': gap})
 
         # 字幕本身
-        result.append({'token': sub.content.replace('\n', ' ').strip(),
+        result.append({'token': sub.content.replace('\n', ' ').strip() + "\n",
                        'duration': end - start})
         cursor = end
 

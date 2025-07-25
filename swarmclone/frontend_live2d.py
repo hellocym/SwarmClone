@@ -16,6 +16,8 @@ from markdown import markdown
 import time
 from tempfile import NamedTemporaryFile
 from typing import Any
+import torchaudio
+from io import BytesIO
 
 available_models = get_live2d_models()
 
@@ -146,9 +148,6 @@ class Live2DWidget(QOpenGLWidget):
         self.update()
     
     def speak(self, fname: str):
-        pygame.mixer.music.stop()
-        pygame.mixer.music.load(fname)
-        pygame.mixer.music.play()
         self.wav_hander.Start(fname)
         print(self.wav_hander.pcmData)
 
@@ -296,7 +295,11 @@ class FrontendLive2D(ModuleBase):
                 elif isinstance(task, SongInfo):
                     # 接收歌曲相关信息
                     data = task.get_value(self)
-                    self.song_info[data["song_id"]] = {"song_path": data["song_path"], "subtitle_path": data["subtitle_path"]}
+                    self.song_info[data["song_id"]] = {
+                        "song_path": data["song_path"],
+                        "subtitle_path": data["subtitle_path"],
+                        "vocal_path": data["vocal_path"]
+                    }
                 
                 elif isinstance(task, ReadyToSing):
                     # 准备好播放歌曲时直接开始播放
@@ -310,13 +313,16 @@ class FrontendLive2D(ModuleBase):
                         self.align_t0 = time.time()
                         align_data = parse_srt_to_list(open(self.song_info[song_id]["subtitle_path"]).read())
                         self.message_queue.append({
+                            "id": f"SONG_{song_id}",
                             "message": f"Model 唱了 {song_id}",
                             "aligned_audio": {
-                                "data": open(self.song_info[song_id]["song_path"], "rb").read(),
+                                "data": open(self.song_info[song_id]["vocal_path"], "rb").read(),
+                                "song_data": open(self.song_info[song_id]["song_path"], "rb").read(),
                                 "align_data": align_data
                             }
                         })
                         self.message_queue.append({
+                            "id": f"SONG_{song_id}_END",
                             "message": None,
                             "aligned_audio": None
                         })
@@ -329,9 +335,29 @@ class FrontendLive2D(ModuleBase):
                             # 如果还没有播放音频（音频项还有数据）则播放音频并清空其数据，同时开始计时
                             if self.message_queue[0]["aligned_audio"]["data"]: # 可能存有缺省值，只在确定有音频时播放
                                 with NamedTemporaryFile() as f:
-                                    f.write(self.message_queue[0]["aligned_audio"]["data"])
+                                    audio_bytesio = BytesIO(self.message_queue[0]["aligned_audio"]["data"])
+                                    data = torchaudio.load(audio_bytesio)
+                                    audio_bytesio.seek(0)
+                                    info = torchaudio.info(audio_bytesio)
+                                    audio_bytesio.seek(0)
+                                    torchaudio.save(
+                                        f.name,
+                                        data[0],
+                                        sample_rate=info.sample_rate,
+                                        format="wav",
+                                        encoding="PCM_S",
+                                        bits_per_sample=16,
+                                    ) # 保存为 16 bit wave 格式以便 live2d 进行口型对齐
                                     f.seek(0)
-                                    self.window.live2d_widget.speak(f.name)
+                                    if "song_data" not in self.message_queue[0]["aligned_audio"]: # 是纯人声，直接播放
+                                        pygame.mixer.music.stop()
+                                        pygame.mixer.music.load(audio_bytesio)
+                                        pygame.mixer.music.play()
+                                    self.window.live2d_widget.speak(f.name) # 只使用纯人声进行口型对齐
+                            if "song_data" in self.message_queue[0]["aligned_audio"]: # 不是纯人声则播放歌曲
+                                pygame.mixer.music.stop()
+                                pygame.mixer.music.load(BytesIO(self.message_queue[0]["aligned_audio"]["song_data"]))
+                                pygame.mixer.music.play()
                             self.message_queue[0]["aligned_audio"]["data"] = None
                             self.align_t0 = time.time()
                         if time.time() - self.align_t0 > self.message_queue[0]["aligned_audio"]["align_data"][0]["duration"]:

@@ -179,14 +179,23 @@ class ChatMessage(Message):
 class SongInfo(Message):
     """
     歌曲信息
+    .song_id: 歌曲 id
+    .song_path: 歌曲路径
+    .vocal_path:  纯人声音频路径
+    .subtitle_path: 字幕路径
+    **所有音频必须是 wav 格式，字幕必须是 srt 格式**
     """
-    def __init__(self, source: ModuleBase, song_id: str, song_path: str, subtitle_path: str):
+    def __init__(self, source: ModuleBase, song_id: str, song_path: str, vocal_path: str, subtitle_path: str):
+        assert song_path.endswith('.wav'), "歌曲路径必须是 wav 格式"
+        assert vocal_path.endswith('.wav'), "纯人声音频路径必须是 wav 格式"
+        assert subtitle_path.endswith('.srt'), "字幕路径必须是 srt 格式"
         super().__init__(
             MessageType.DATA,
             source,
             destinations=[ModuleRoles.FRONTEND, ModuleRoles.LLM],
             song_id=song_id,
             song_path=song_path,
+            vocal_path=vocal_path,
             subtitle_path=subtitle_path
         )
 

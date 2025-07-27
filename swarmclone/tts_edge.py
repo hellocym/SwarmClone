@@ -4,10 +4,10 @@ from .modules import *
 from .messages import *
 from dataclasses import dataclass, field
 import edge_tts
-import tempfile
 import torchaudio
 import jieba
 from time import time
+from io import BytesIO
 
 voices = get_voices()
 @dataclass
@@ -34,26 +34,40 @@ class TTSEdge(TTSBase):
     async def generate_sentence(self, id: str, content: str, emotions: dict[str, float]) -> TTSAlignedAudio:
         try:
             communicate = edge_tts.Communicate(content, self.voice)
-            with tempfile.NamedTemporaryFile() as f:
-                await communicate.save(f.name)
-                info = torchaudio.info(f.file)
-                data = torchaudio.load(f.file)
-                duration = info.num_frames / info.sample_rate
-                words = [*jieba.cut(content)]
-                intervals = [
-                    {"token": word, "duration": duration / len(words)}
-                    for word in words
-                ]
-                with tempfile.NamedTemporaryFile() as f_wav:
-                    torchaudio.save(
-                        f_wav.name,
-                        data[0],
-                        sample_rate=info.sample_rate,
-                        format="wav",
-                        encoding="PCM_S",
-                        bits_per_sample=16,
-                    )
-                    audio_data = f_wav.file.read()
+            
+            # 使用stream()方法获取音频数据到内存
+            audio_chunks = []
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio" and "data" in chunk:
+                    audio_chunks.append(chunk["data"])
+            audio_bytes = b"".join(audio_chunks)
+            
+            # 从内存中读取音频信息
+            audio_buffer = BytesIO(audio_bytes)
+            info = torchaudio.info(audio_buffer)
+            audio_buffer.seek(0)
+            data = torchaudio.load(audio_buffer)
+            duration = info.num_frames / info.sample_rate
+            
+            # 生成对齐数据
+            words = [*jieba.cut(content)]
+            intervals = [
+                {"token": word, "duration": duration / len(words)}
+                for word in words
+            ]
+            
+            # 转换为WAV格式并获取字节数据
+            wav_buffer = BytesIO()
+            torchaudio.save(
+                wav_buffer,
+                data[0],
+                sample_rate=info.sample_rate,
+                format="wav",
+                encoding="PCM_S",
+                bits_per_sample=16,
+            )
+            wav_buffer.seek(0)
+            audio_data = wav_buffer.read()
         except:
             import traceback; traceback.print_exc()
             audio_data = b''

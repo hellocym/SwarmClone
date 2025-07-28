@@ -26,6 +26,18 @@ class NCatBotChatConfig(ModuleConfig):
         "required": True,
         "desc": "管理员QQ号"
     })
+    keyword1: str = field(default="", metadata={
+        "required": False,
+        "desc": "激活关键词1，在对话中包含这个词时会触发回复"
+    })
+    keyword2: str = field(default="", metadata={
+        "required": False,
+        "desc": "激活关键词2"
+    })
+    keyword3: str = field(default="", metadata={
+        "required": False,
+        "desc": "激活关键词3"
+    })
 
 class NCatBotChat(ModuleBase):
     role: ModuleRoles = ModuleRoles.CHAT
@@ -42,6 +54,7 @@ class NCatBotChat(ModuleBase):
         self.bot_id = self.config.bot_id
         self.root_id = self.config.root_id
         self.api = self.bot.run_blocking(bt_uin=self.bot_id, root=self.root_id)
+        self.keywords: list[str] = [self.config.keyword1, self.config.keyword2, self.config.keyword3]
 
         # 注册回调事件
         self.bot.add_group_event_handler(self.on_group_msg)
@@ -75,6 +88,10 @@ class NCatBotChat(ModuleBase):
                     }}}:
                     text += face_text if face_text is not None else ""
                 case _: ...
+        do_accept = do_accept or any(
+            (x and x in text)
+            for x in self.keywords
+        ) # 是否有提到自己
         if do_accept and text:
             message = ChatMessage(
                 source=self,

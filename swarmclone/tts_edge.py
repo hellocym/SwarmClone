@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 import edge_tts
 import torchaudio
 import jieba
-from time import time
 from io import BytesIO
 
 voices = get_voices()

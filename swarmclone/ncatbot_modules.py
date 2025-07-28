@@ -4,7 +4,6 @@ try:
     available = True
 except ImportError:
     available = False
-from threading import Lock
 from dataclasses import dataclass, field
 from .constants import *
 from .messages import *
@@ -47,8 +46,6 @@ class NCatBotChat(ModuleBase):
     def __init__(self, config: config_class | None = None, **kwargs):
         super().__init__(config, **kwargs)
         assert available, "NCatBotChat requires ncatbot to be installed"
-        lock = Lock()
-        lock.acquire()
         self.bot = BotClient()
         self.target_group_id = self.config.target_group_id
         self.bot_id = self.config.bot_id
@@ -58,6 +55,13 @@ class NCatBotChat(ModuleBase):
 
         # 注册回调事件
         self.bot.add_group_event_handler(self.on_group_msg)
+    
+    async def run(self) -> None:
+        try:
+            await super().run()
+        finally:
+            self.bot.clean_up()
+            del self.bot
     
     async def process_task(self, task: Message | None) -> Message | None:
         if isinstance(task, NCatBotLLMMessage):

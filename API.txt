@@ -3,7 +3,7 @@
 asr_dummy: {
     "module": "ASR",
     "speaker_name": "user0",
-    "content": "some message"
+    "message": "some message"
 } 
 -> return {"status": OK}
 
